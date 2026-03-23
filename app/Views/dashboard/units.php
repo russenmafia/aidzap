@@ -15,44 +15,115 @@
   <a href="/publisher/units/create" class="btn-primary-sm">Create Ad Unit →</a>
 </div>
 <?php else: ?>
-<div class="data-table">
-  <div class="dt-header" style="grid-template-columns:2fr 80px 90px 100px 120px 90px">
-    <div>Unit</div><div>Type</div><div>Size</div><div>Impressions</div><div>Earned</div><div>Status</div>
-  </div>
-  <?php foreach ($units as $u): ?>
-  <div class="dt-row" style="grid-template-columns:2fr 80px 90px 100px 120px 90px">
+
+<?php foreach ($units as $u):
+  $type  = $u['type'] ?? 'banner';
+  $uuid  = $u['uuid'];
+  $parts = explode('x', $u['size'] ?? '300x250');
+  $w     = $parts[0] ?? '300';
+  $h     = $parts[1] ?? '250';
+
+  if ($type === 'native') {
+      $embedCode = '<div data-aidzap-unit="' . $uuid . '" data-aidzap-type="native"></div>';
+  } elseif ($type === 'interstitial') {
+      $embedCode = '<script>window.aidzapUnit="' . $uuid . '";</script>' . "\n" . '<script src="https://aidzap.com/ad/interstitial.js"></script>';
+  } else {
+      $embedCode = '<iframe src="https://aidzap.com/ad/' . $uuid . '" width="' . $w . '" height="' . $h . '" scrolling="no" frameborder="0" style="border:none"></iframe>';
+  }
+?>
+
+<div class="unit-card">
+
+  <!-- Header Row -->
+  <div class="unit-header">
     <div>
       <div class="dt-name"><?= htmlspecialchars($u['name']) ?></div>
       <div class="dt-sub"><?= htmlspecialchars($u['website_url']) ?></div>
     </div>
-    <div><span class="badge badge-gray"><?= htmlspecialchars(ucfirst($u['type'] ?? 'banner')) ?></span></div>
-    <div class="dt-muted"><?= htmlspecialchars($u['size'] ?? '–') ?></div>
-    <div class="dt-muted"><?= number_format((int)$u['impressions']) ?></div>
-    <div class="dt-green"><?= number_format((float)$u['earned'], 8) ?> BTC</div>
-    <div><?= statusBadge($u['status']) ?></div>
-  </div>
-
-  <!-- Embed code row -->
-  <div class="embed-row">
-    <div class="embed-label">Embed code</div>
-    <div class="embed-box" onclick="this.select()" title="Click to select">
-      <?php
-      $type = $u['type'] ?? 'banner';
-      $uuid = htmlspecialchars($u['uuid']);
-      $w = explode('x', $u['size'] ?? '300x250')[0] ?? '300';
-      $h = explode('x', $u['size'] ?? '300x250')[1] ?? '250';
-      if ($type === 'banner' || $type === 'sticky'): ?>
-&lt;iframe src="https://aidzap.com/ad/<?= $uuid ?>" width="<?= $w ?>" height="<?= $h ?>" scrolling="no" frameborder="0" style="border:none"&gt;&lt;/iframe&gt;
-      <?php elseif ($type === 'native'): ?>
-&lt;div data-aidzap-unit="<?= $uuid ?>" data-aidzap-type="native"&gt;&lt;/div&gt;
-      <?php else: ?>
-&lt;script&gt;window.aidzapUnit="<?= $uuid ?>";&lt;/script&gt;
+    <div class="unit-meta">
+      <span class="badge badge-gray"><?= htmlspecialchars(ucfirst($type)) ?></span>
+      <?php if ($type === 'banner' || $type === 'sticky'): ?>
+      <span class="unit-size"><?= htmlspecialchars($u['size'] ?? '–') ?></span>
       <?php endif; ?>
+      <?= statusBadge($u['status']) ?>
     </div>
   </div>
 
-  <?php endforeach; ?>
-</div>
+  <!-- Stats Row -->
+  <div class="unit-stats">
+    <div class="unit-stat">
+      <span class="unit-stat-label">Impressions</span>
+      <span class="unit-stat-val"><?= number_format((int)$u['impressions']) ?></span>
+    </div>
+    <div class="unit-stat">
+      <span class="unit-stat-label">Clicks</span>
+      <span class="unit-stat-val"><?= number_format((int)$u['clicks']) ?></span>
+    </div>
+    <div class="unit-stat">
+      <span class="unit-stat-label">Earned</span>
+      <span class="unit-stat-val green"><?= number_format((float)$u['earned'], 8) ?> BTC</span>
+    </div>
+    <div class="unit-stat">
+      <span class="unit-stat-label">CTR</span>
+      <span class="unit-stat-val">
+        <?= $u['impressions'] > 0
+            ? number_format(($u['clicks'] / $u['impressions']) * 100, 2) . '%'
+            : '–' ?>
+      </span>
+    </div>
+  </div>
+
+  <!-- Embed + Preview Row -->
+  <div class="unit-bottom">
+
+    <!-- Embed Code -->
+    <div class="unit-embed-wrap">
+      <div class="embed-label">Embed code
+        <button class="copy-btn" onclick="copyEmbed(this)" data-code="<?= htmlspecialchars($embedCode) ?>">Copy</button>
+      </div>
+      <pre class="embed-box"><?= htmlspecialchars($embedCode) ?></pre>
+    </div>
+
+    <!-- Banner Preview -->
+    <?php if ($type === 'banner' || $type === 'sticky'): ?>
+    <div class="unit-preview-wrap">
+      <div class="embed-label">Preview</div>
+      <div class="banner-preview" style="width:<?= min((int)$w, 400) ?>px;height:<?= min((int)$h, 200) ?>px">
+        <div class="banner-preview-inner">
+          <div class="banner-preview-logo">AIDZAP</div>
+          <div class="banner-preview-size"><?= htmlspecialchars($u['size'] ?? '') ?></div>
+          <div class="banner-preview-status">
+            <?php if ($u['status'] === 'pending_review'): ?>
+            <span class="badge badge-yellow">Awaiting review</span>
+            <?php elseif ($u['status'] === 'active'): ?>
+            <span class="badge badge-green">Live</span>
+            <?php else: ?>
+            <span class="badge badge-gray"><?= htmlspecialchars(ucfirst($u['status'])) ?></span>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
+    </div>
+    <?php elseif ($type === 'native'): ?>
+    <div class="unit-preview-wrap">
+      <div class="embed-label">Native Preview</div>
+      <div class="native-preview">
+        <div class="native-preview-img"></div>
+        <div class="native-preview-content">
+          <div class="native-preview-tag">Sponsored</div>
+          <div class="native-preview-title">Your ad headline will appear here</div>
+          <div class="native-preview-desc">Description text from the advertiser's creative will be shown in this space.</div>
+          <div class="native-preview-cta">Learn more →</div>
+        </div>
+      </div>
+    </div>
+    <?php endif; ?>
+
+  </div><!-- /unit-bottom -->
+
+</div><!-- /unit-card -->
+
+<?php endforeach; ?>
 <?php endif; ?>
 
 <?php
@@ -68,3 +139,14 @@ function statusBadge(string $status): string {
     return "<span class='badge badge-{$color}'>{$label}</span>";
 }
 ?>
+
+<script>
+function copyEmbed(btn) {
+    const code = btn.getAttribute('data-code');
+    navigator.clipboard.writeText(code).then(() => {
+        btn.textContent = 'Copied!';
+        btn.style.color = '#3ecf8e';
+        setTimeout(() => { btn.textContent = 'Copy'; btn.style.color = ''; }, 2000);
+    });
+}
+</script>
