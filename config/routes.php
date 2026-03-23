@@ -43,3 +43,10 @@ $router->get('/admin/review/banners',         [\Controllers\AdminController::cla
 $router->post('/admin/review/banners/action', [\Controllers\AdminController::class, 'reviewBannerAction']);
 $router->get('/admin/fraud',                  [\Controllers\AdminController::class, 'fraud']);
 $router->post('/admin/fraud/unblacklist',     [\Controllers\AdminController::class, 'unblacklist']);
+
+// Banner Routes
+$router->get('/advertiser/campaigns/:uuid/banners',              [\Controllers\BannerController::class, 'index']);
+$router->get('/advertiser/campaigns/:uuid/banners/create',       [\Controllers\BannerController::class, 'createForm']);
+$router->post('/advertiser/campaigns/:uuid/banners/create',      [\Controllers\BannerController::class, 'create']);
+$router->post('/advertiser/campaigns/:uuid/banners/:buuid/delete', [\Controllers\BannerController::class, 'delete']);
+$router->post('/advertiser/banners/generate-ai',                 [\Controllers\BannerController::class, 'generateAi']);
