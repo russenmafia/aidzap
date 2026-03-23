@@ -27,3 +27,19 @@ foreach (['/publisher/earnings','/publisher/withdraw','/advertiser/banners',
         echo '<p style="font-family:monospace;padding:2rem;color:#3ecf8e">Coming soon: ' . htmlspecialchars($route) . '</p>';
     });
 }
+
+// Ad Serving (wird auch direkt über public/ad/serve.php aufgerufen)
+$router->get('/ad/:uuid', function(string $uuid) {
+    require_once APP_PATH . '/../public/ad/serve.php';
+});
+
+// Admin
+$router->get('/admin',                        [\Controllers\AdminController::class, 'index']);
+$router->get('/admin/users',                  [\Controllers\AdminController::class, 'users']);
+$router->post('/admin/users/action',          [\Controllers\AdminController::class, 'userAction']);
+$router->get('/admin/review/units',           [\Controllers\AdminController::class, 'reviewUnits']);
+$router->post('/admin/review/units/action',   [\Controllers\AdminController::class, 'reviewUnitAction']);
+$router->get('/admin/review/banners',         [\Controllers\AdminController::class, 'reviewBanners']);
+$router->post('/admin/review/banners/action', [\Controllers\AdminController::class, 'reviewBannerAction']);
+$router->get('/admin/fraud',                  [\Controllers\AdminController::class, 'fraud']);
+$router->post('/admin/fraud/unblacklist',     [\Controllers\AdminController::class, 'unblacklist']);
