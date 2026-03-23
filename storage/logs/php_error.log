@@ -1,0 +1,12 @@
+[23-Mar-2026 09:50:41 Europe/Berlin] PHP Fatal error:  Uncaught TypeError: rtrim(): Argument #1 ($string) must be of type string, null given in /usr/www/users/aidzapa/app/Core/Router.php:24
+Stack trace:
+#0 /usr/www/users/aidzapa/app/Core/Router.php(24): rtrim()
+#1 /usr/www/users/aidzapa/index.php(46): Core\Router->dispatch()
+#2 {main}
+  thrown in /usr/www/users/aidzapa/app/Core/Router.php on line 24
+[23-Mar-2026 10:00:28 Europe/Berlin] PHP Fatal error:  Uncaught TypeError: rtrim(): Argument #1 ($string) must be of type string, null given in /usr/www/users/aidzapa/app/Core/Router.php:24
+Stack trace:
+#0 /usr/www/users/aidzapa/app/Core/Router.php(24): rtrim()
+#1 /usr/www/users/aidzapa/index.php(46): Core\Router->dispatch()
+#2 {main}
+  thrown in /usr/www/users/aidzapa/app/Core/Router.php on line 24

@@ -1,14 +1,13 @@
 #!/bin/bash
 # =============================================================================
 # aidzap.com – Projekt-Setup Script
-# Ausführen als root oder mit sudo auf dem Hetzner Server
-# Usage: bash setup.sh
+# Läuft als normaler User (aidzapa) ohne root/sudo
+# Usage: bash ~/public_html/setup.sh
 # =============================================================================
 
 set -e
 
-PROJECT_ROOT="/var/www/aidzap.com"
-WEB_USER="www-data"
+PROJECT_ROOT="/home/aidzapa/public_html"
 
 echo "========================================"
 echo "  aidzap.com – Projektstruktur Setup"
@@ -37,7 +36,7 @@ mkdir -p "$PROJECT_ROOT"/tests
 
 echo "    ✓ Verzeichnisse angelegt"
 
-# --- Platzhalter-Dateien für leere Ordner ---
+# --- Platzhalter für leere Ordner ---
 echo "[2/5] Erstelle Platzhalter-Dateien..."
 
 touch "$PROJECT_ROOT"/storage/logs/.gitkeep
@@ -78,16 +77,16 @@ else
     echo "    ⚠ .env existiert bereits – nicht überschrieben"
 fi
 
-# --- Root .htaccess (schützt app/ etc.) ---
+# --- .htaccess Dateien ---
 echo "[4/5] Erstelle .htaccess Dateien..."
 
 cat > "$PROJECT_ROOT"/.htaccess << 'EOF'
-# Schützt alle Verzeichnisse außer public/ vor direktem Zugriff
 Options -Indexes
-Require all denied
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
 EOF
 
-# public/.htaccess (Front Controller + HTTPS)
 cat > "$PROJECT_ROOT"/public/.htaccess << 'EOF'
 Options -MultiViews -Indexes
 RewriteEngine On
@@ -109,23 +108,27 @@ RewriteRule ^ - [L]
 RewriteRule ^ index.php [L]
 
 # Security Headers
-Header always set X-Content-Type-Options "nosniff"
-Header always set X-Frame-Options "SAMEORIGIN"
-Header always set X-XSS-Protection "1; mode=block"
-Header always set Referrer-Policy "strict-origin-when-cross-origin"
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
 EOF
 
 echo "    ✓ .htaccess Dateien erstellt"
 
-# --- Bootstrap public/index.php ---
+# --- PHP Core-Dateien ---
+echo "[5/5] Erstelle PHP Core-Dateien..."
+
 cat > "$PROJECT_ROOT"/public/index.php << 'EOF'
 <?php
 declare(strict_types=1);
 
-define('BASE_PATH', dirname(__DIR__));
-define('APP_PATH', BASE_PATH . '/app');
+define('BASE_PATH',   dirname(__DIR__));
+define('APP_PATH',    BASE_PATH . '/app');
 define('CONFIG_PATH', BASE_PATH . '/config');
-define('STORAGE_PATH', BASE_PATH . '/storage');
+define('STORAGE_PATH',BASE_PATH . '/storage');
 
 // Autoloader
 spl_autoload_register(function (string $class): void {
@@ -135,7 +138,7 @@ spl_autoload_register(function (string $class): void {
     }
 });
 
-// Umgebungsvariablen laden
+// .env laden
 $envFile = BASE_PATH . '/.env';
 if (file_exists($envFile)) {
     foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
@@ -147,7 +150,7 @@ if (file_exists($envFile)) {
 }
 
 // Fehlerbehandlung
-if ($_ENV['APP_DEBUG'] ?? false) {
+if (($_ENV['APP_DEBUG'] ?? 'false') === 'true') {
     ini_set('display_errors', '1');
     error_reporting(E_ALL);
 } else {
@@ -157,7 +160,7 @@ if ($_ENV['APP_DEBUG'] ?? false) {
     ini_set('error_log', STORAGE_PATH . '/logs/php_error.log');
 }
 
-// Session starten
+// Session
 session_start([
     'cookie_httponly' => true,
     'cookie_secure'   => true,
@@ -165,51 +168,13 @@ session_start([
     'gc_maxlifetime'  => (int)($_ENV['SESSION_LIFETIME'] ?? 7200),
 ]);
 
-// Router starten
+// Router
 require_once APP_PATH . '/Core/Router.php';
-
 $router = new Core\Router();
 require_once CONFIG_PATH . '/routes.php';
 $router->dispatch();
 EOF
 
-# --- config/routes.php Placeholder ---
-cat > "$PROJECT_ROOT"/config/routes.php << 'EOF'
-<?php
-// Routen-Definition
-// $router->get('/', [Controllers\HomeController::class, 'index']);
-// $router->get('/register', [Controllers\AuthController::class, 'registerForm']);
-// $router->post('/register', [Controllers\AuthController::class, 'register']);
-// $router->get('/login', [Controllers\AuthController::class, 'loginForm']);
-// $router->post('/login', [Controllers\AuthController::class, 'login']);
-// $router->get('/logout', [Controllers\AuthController::class, 'logout']);
-
-// Temporäre Startseite bis Controller fertig sind
-$router->get('/', function() {
-    http_response_code(200);
-    echo '<h1 style="font-family:monospace;padding:2rem">aidzap.com – Setup OK ✓</h1>';
-});
-EOF
-
-# --- config/database.php ---
-cat > "$PROJECT_ROOT"/config/database.php << 'EOF'
-<?php
-return [
-    'host'    => $_ENV['DB_HOST'] ?? 'localhost',
-    'port'    => $_ENV['DB_PORT'] ?? '3306',
-    'dbname'  => $_ENV['DB_NAME'] ?? 'aidzap',
-    'user'    => $_ENV['DB_USER'] ?? '',
-    'pass'    => $_ENV['DB_PASS'] ?? '',
-    'charset' => 'utf8mb4',
-    'options' => [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES   => false,
-    ],
-];
-EOF
-
-# --- app/Core/Router.php ---
 cat > "$PROJECT_ROOT"/app/Core/Router.php << 'EOF'
 <?php
 declare(strict_types=1);
@@ -236,13 +201,11 @@ class Router
         $uri    = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         $uri    = rtrim($uri, '/') ?: '/';
 
-        // Exakter Match
         if (isset($this->routes[$method][$uri])) {
             $this->call($this->routes[$method][$uri]);
             return;
         }
 
-        // Dynamische Segmente (:id etc.)
         foreach ($this->routes[$method] ?? [] as $pattern => $handler) {
             $regex = preg_replace('#:([a-zA-Z_]+)#', '(?P<$1>[^/]+)', $pattern);
             if (preg_match('#^' . $regex . '$#', $uri, $matches)) {
@@ -252,13 +215,9 @@ class Router
             }
         }
 
-        // 404
         http_response_code(404);
-        if (file_exists(APP_PATH . '/Views/errors/404.php')) {
-            require APP_PATH . '/Views/errors/404.php';
-        } else {
-            echo '<h1>404 – Seite nicht gefunden</h1>';
-        }
+        $view404 = APP_PATH . '/Views/errors/404.php';
+        file_exists($view404) ? require $view404 : print('<h1>404 – Nicht gefunden</h1>');
     }
 
     private function call(callable|array $handler, array $params = []): void
@@ -267,14 +226,12 @@ class Router
             call_user_func_array($handler, $params);
         } elseif (is_array($handler) && count($handler) === 2) {
             [$class, $method] = $handler;
-            $controller = new $class();
-            $controller->$method(...array_values($params));
+            (new $class())->$method(...array_values($params));
         }
     }
 }
 EOF
 
-# --- app/Core/Database.php ---
 cat > "$PROJECT_ROOT"/app/Core/Database.php << 'EOF'
 <?php
 declare(strict_types=1);
@@ -297,44 +254,70 @@ class Database
         return self::$instance;
     }
 
-    // Verhindert Klonen & Deserialisierung
     private function __construct() {}
     private function __clone() {}
 }
 EOF
 
-echo "    ✓ Core-Dateien erstellt"
+cat > "$PROJECT_ROOT"/config/database.php << 'EOF'
+<?php
+return [
+    'host'    => $_ENV['DB_HOST'] ?? 'localhost',
+    'port'    => $_ENV['DB_PORT'] ?? '3306',
+    'dbname'  => $_ENV['DB_NAME'] ?? 'aidzap',
+    'user'    => $_ENV['DB_USER'] ?? '',
+    'pass'    => $_ENV['DB_PASS'] ?? '',
+    'charset' => 'utf8mb4',
+    'options' => [
+        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES   => false,
+    ],
+];
+EOF
 
-# --- Berechtigungen setzen ---
-echo "[5/5] Setze Berechtigungen..."
+cat > "$PROJECT_ROOT"/config/routes.php << 'EOF'
+<?php
+$router->get('/', function() {
+    http_response_code(200);
+    echo '<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>aidzap.com</title>
+<style>
+  body { font-family: monospace; background: #0a0a0a; color: #00ff88;
+         display: flex; align-items: center; justify-content: center;
+         height: 100vh; margin: 0; }
+  .box { text-align: center; }
+  .logo { font-size: 2.5rem; font-weight: bold; letter-spacing: .2em; }
+  .sub  { color: #666; margin-top: .5rem; font-size: .9rem; }
+</style></head>
+<body><div class="box">
+  <div class="logo">AIDZAP</div>
+  <div class="sub">Setup erfolgreich ✓ &nbsp;|&nbsp; PHP ' . PHP_VERSION . '</div>
+</div></body></html>';
+});
+EOF
 
-chown -R "$WEB_USER":"$WEB_USER" "$PROJECT_ROOT"
-find "$PROJECT_ROOT" -type d -exec chmod 755 {} \;
-find "$PROJECT_ROOT" -type f -exec chmod 644 {} \;
+echo "    ✓ PHP Core-Dateien erstellt"
+
+# --- Berechtigungen ---
+chmod -R 755 "$PROJECT_ROOT"
 chmod -R 775 "$PROJECT_ROOT"/storage
 chmod 600 "$PROJECT_ROOT"/.env
-
-echo "    ✓ Berechtigungen gesetzt"
 
 echo ""
 echo "========================================"
 echo "  ✅ Setup abgeschlossen!"
 echo "========================================"
 echo ""
-echo "  Nächste Schritte:"
-echo "  1. .env ausfüllen: nano $PROJECT_ROOT/.env"
-echo "  2. MySQL Datenbank anlegen (siehe unten)"
-echo "  3. Apache VirtualHost konfigurieren"
-echo "  4. https://aidzap.com aufrufen → 'Setup OK' sollte erscheinen"
+echo "  Projektpfad: $PROJECT_ROOT"
 echo ""
-echo "  MySQL Setup:"
-echo "  ┌─────────────────────────────────────────────────┐"
-echo "  │ CREATE DATABASE aidzap CHARACTER SET utf8mb4    │"
-echo "  │   COLLATE utf8mb4_unicode_ci;                   │"
-echo "  │ CREATE USER 'aidzap_user'@'localhost'           │"
-echo "  │   IDENTIFIED BY 'STRONG_PASSWORD';              │"
-echo "  │ GRANT ALL PRIVILEGES ON aidzap.*               │"
-echo "  │   TO 'aidzap_user'@'localhost';                 │"
-echo "  │ FLUSH PRIVILEGES;                               │"
-echo "  └─────────────────────────────────────────────────┘"
+echo "  Nächste Schritte:"
+echo "  1. .env ausfüllen:"
+echo "     nano $PROJECT_ROOT/.env"
+echo ""
+echo "  2. MySQL Datenbank im Hetzner KonsoleH Panel anlegen:"
+echo "     Name: aidzap"
+echo ""
+echo "  3. https://aidzap.com aufrufen"
+echo "     Grüner 'Setup erfolgreich' Screen sollte erscheinen"
 echo ""
