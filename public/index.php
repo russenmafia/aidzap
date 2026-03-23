@@ -1,167 +1,67 @@
-<?php $active = 'dashboard'; ?>
-
-<div class="page-header">
-  <h1 class="page-title">Dashboard</h1>
-  <div class="tab-group">
-    <button class="tab active" onclick="showTab('overview',this)">Overview</button>
-    <?php if (in_array($user['role'], ['publisher','both'])): ?>
-    <button class="tab" onclick="showTab('publisher',this)">Publisher</button>
-    <?php endif; ?>
-    <?php if (in_array($user['role'], ['advertiser','both'])): ?>
-    <button class="tab" onclick="showTab('advertiser',this)">Advertiser</button>
-    <?php endif; ?>
+<section class="hero">
+  <div class="badge"><span class="badge-dot"></span>No KYC. No Cookies. No Tracking.</div>
+  <h1>Crypto advertising<br><strong>built for privacy</strong></h1>
+  <p class="hero-sub">The ad network that respects both advertiser and visitor. Pure HTML/CSS banners. Anonymous accounts. Crypto payouts from day one.</p>
+  <div class="hero-ctas">
+    <a href="/register" class="btn-hero">Start for free →</a>
+    <a href="/publisher" class="btn-hero-ghost">Publisher docs</a>
   </div>
+</section>
+
+<div class="stats-bar">
+  <div class="stat"><span class="stat-num">0</span><span class="stat-label">KYC Requirements</span></div>
+  <div class="stat"><span class="stat-num">20+</span><span class="stat-label">Cryptocurrencies</span></div>
+  <div class="stat"><span class="stat-num">0.001</span><span class="stat-label">Min. BTC Payout</span></div>
+  <div class="stat"><span class="stat-num">&#x221e;</span><span class="stat-label">Min. Traffic Needed</span></div>
 </div>
 
-<!-- Overview Tab -->
-<div id="tab-overview" class="tab-content">
-  <div class="metrics">
-    <div class="metric">
-      <div class="metric-label">Total earned</div>
-      <div class="metric-val green"><?= number_format((float)($pubStats['total_earned'] ?? 0), 8) ?></div>
-      <div class="metric-sub">BTC lifetime</div>
-    </div>
-    <div class="metric">
-      <div class="metric-label">Impressions</div>
-      <div class="metric-val"><?= number_format((int)($pubStats['total_impressions'] ?? 0)) ?></div>
-      <div class="metric-sub">all time</div>
-    </div>
-    <div class="metric">
-      <div class="metric-label">Active campaigns</div>
-      <div class="metric-val"><?= (int)($advStats['active_campaigns'] ?? 0) ?></div>
-      <div class="metric-sub">of <?= (int)($advStats['total_campaigns'] ?? 0) ?> total</div>
-    </div>
-    <div class="metric">
-      <div class="metric-label">Ad balance</div>
-      <div class="metric-val">
-        <?php if (!empty($balances)): ?>
-          <?= number_format((float)$balances[0]['amount'], 5) ?>
-          <span style="font-size:13px;color:rgba(255,255,255,0.3)"><?= htmlspecialchars($balances[0]['currency']) ?></span>
-        <?php else: ?>0.00000<?php endif; ?>
-      </div>
-      <div class="metric-sub">available</div>
-    </div>
-  </div>
-
-  <!-- Quick links -->
-  <div class="quick-grid">
-    <?php if (in_array($user['role'], ['publisher','both'])): ?>
-    <a href="/publisher/units/create" class="quick-card">
-      <div class="quick-icon">+</div>
-      <div class="quick-title">New Ad Unit</div>
-      <div class="quick-desc">Add a banner slot to your site</div>
-    </a>
-    <?php endif; ?>
-    <?php if (in_array($user['role'], ['advertiser','both'])): ?>
-    <a href="/advertiser/campaigns/create" class="quick-card">
-      <div class="quick-icon">&#9672;</div>
-      <div class="quick-title">New Campaign</div>
-      <div class="quick-desc">Start advertising today</div>
-    </a>
-    <a href="/advertiser/billing" class="quick-card">
-      <div class="quick-icon">&#8593;</div>
-      <div class="quick-title">Deposit</div>
-      <div class="quick-desc">Top up your ad balance</div>
-    </a>
-    <?php endif; ?>
-    <a href="/account/wallets" class="quick-card">
-      <div class="quick-icon">&#9635;</div>
-      <div class="quick-title">Add Wallet</div>
-      <div class="quick-desc">Set payout address</div>
-    </a>
-  </div>
-</div>
-
-<!-- Publisher Tab -->
-<?php if (in_array($user['role'], ['publisher','both'])): ?>
-<div id="tab-publisher" class="tab-content" style="display:none">
-  <div class="section-bar">
-    <h2 class="section-title">Ad Units</h2>
-    <a href="/publisher/units/create" class="btn-add">+ New Unit</a>
-  </div>
-
-  <?php if (empty($units)): ?>
-  <div class="empty-state">
-    <p>No ad units yet.</p>
-    <a href="/publisher/units/create" class="btn-primary-sm">Create your first ad unit →</a>
-  </div>
-  <?php else: ?>
-  <div class="data-table">
-    <div class="dt-header" style="grid-template-columns:2fr 90px 100px 120px 90px">
-      <div>Unit</div><div>Size</div><div>Impressions</div><div>Earned</div><div>Status</div>
-    </div>
-    <?php foreach ($units as $u): ?>
-    <div class="dt-row" style="grid-template-columns:2fr 90px 100px 120px 90px">
-      <div>
-        <div class="dt-name"><?= htmlspecialchars($u['name']) ?></div>
-        <div class="dt-sub"><?= htmlspecialchars($u['website_url']) ?></div>
-      </div>
-      <div class="dt-muted"><?= htmlspecialchars($u['size']) ?></div>
-      <div class="dt-muted"><?= number_format((int)$u['impressions']) ?></div>
-      <div class="dt-green"><?= number_format((float)$u['earned'], 8) ?> BTC</div>
-      <div><?= statusBadge($u['status']) ?></div>
+<section class="features">
+  <p class="section-label">Why aidzap</p>
+  <h2 class="section-title">Built different, by design</h2>
+  <div class="features-grid">
+    <?php foreach ([
+      ['&#x1F512;', 'Zero KYC',              'No name, no address, no ID. Create an account with just a username and password.'],
+      ['&#x1F36A;', 'No cookies, no JS',     'Every banner is pure HTML/CSS. No invasive scripts, no fingerprinting, no third-party calls.'],
+      ['&#x26A1;',  'Start instantly',       'No traffic minimums. Your first blog qualifies. No waiting period, no approval queue.'],
+      ['&#x20BF;',  'Crypto-native payouts', 'BTC, ETH, LTC and 20+ more. Withdraw from 0.001 BTC. Direct to your wallet.'],
+      ['&#x1F6E1;', 'AI fraud detection',   'Real-time bot scoring on every impression. Datacenter IPs, behavioral anomalies, frequency caps.'],
+      ['&#x1F4CA;', 'CPD / CPM / CPA',       'Pay per day, per thousand impressions, or per action. Simple models for every budget.'],
+    ] as [$icon, $ftitle, $desc]): ?>
+    <div class="feature-card">
+      <div class="feature-icon"><?= $icon ?></div>
+      <h3 class="feature-title"><?= $ftitle ?></h3>
+      <p class="feature-desc"><?= $desc ?></p>
     </div>
     <?php endforeach; ?>
   </div>
-  <?php endif; ?>
-</div>
-<?php endif; ?>
+</section>
 
-<!-- Advertiser Tab -->
-<?php if (in_array($user['role'], ['advertiser','both'])): ?>
-<div id="tab-advertiser" class="tab-content" style="display:none">
-  <div class="section-bar">
-    <h2 class="section-title">Campaigns</h2>
-    <a href="/advertiser/campaigns/create" class="btn-add">+ New Campaign</a>
-  </div>
-
-  <?php if (empty($campaigns)): ?>
-  <div class="empty-state">
-    <p>No campaigns yet.</p>
-    <a href="/advertiser/campaigns/create" class="btn-primary-sm">Create your first campaign →</a>
-  </div>
-  <?php else: ?>
-  <div class="data-table">
-    <div class="dt-header" style="grid-template-columns:2fr 80px 120px 80px 90px">
-      <div>Campaign</div><div>Model</div><div>Spent</div><div>Clicks</div><div>Status</div>
+<section class="vs-section">
+  <p class="section-label">Comparison</p>
+  <h2 class="section-title">aidzap vs. the alternatives</h2>
+  <div class="vs-table">
+    <div class="vs-row vs-header">
+      <div>Feature</div><div class="col-us">AIDZAP</div><div>Others</div>
     </div>
-    <?php foreach ($campaigns as $c): ?>
-    <div class="dt-row" style="grid-template-columns:2fr 80px 120px 80px 90px">
-      <div>
-        <div class="dt-name"><?= htmlspecialchars($c['name']) ?></div>
-        <div class="dt-sub">Budget: <?= number_format((float)$c['total_budget'], 5) ?> <?= htmlspecialchars($c['currency']) ?></div>
-      </div>
-      <div class="dt-muted"><?= strtoupper(htmlspecialchars($c['pricing_model'])) ?></div>
-      <div class="dt-muted"><?= number_format((float)$c['spent'], 5) ?> <?= htmlspecialchars($c['currency']) ?></div>
-      <div class="dt-muted">–</div>
-      <div><?= statusBadge($c['status']) ?></div>
+    <?php foreach ([
+      ['Anonymous registration (no KYC)',  '&#x2713; Yes',          '&#x2717; No'],
+      ['No JS tracking / cookies',         '&#x2713; HTML/CSS only', '&#x2717; Required'],
+      ['Traffic minimum for publishers',   '&#x2713; None',          '&#x2717; 10k+/mo'],
+      ['Crypto payouts',                   '&#x2713; 20+ coins',     '&#x2717; Fiat only'],
+      ['AI bot / fraud detection',         '&#x2713; Real-time',     '&#x2717; Basic'],
+      ['Minimum payout',                   '&#x2713; 0.001 BTC',     '&#x2717; $100+'],
+    ] as [$feat, $us, $them]): ?>
+    <div class="vs-row">
+      <div class="vs-feature"><?= $feat ?></div>
+      <div class="col-us check"><?= $us ?></div>
+      <div class="cross"><?= $them ?></div>
     </div>
     <?php endforeach; ?>
   </div>
-  <?php endif; ?>
-</div>
-<?php endif; ?>
+</section>
 
-<?php
-function statusBadge(string $status): string {
-    $map = [
-        'active'         => ['green',  'Active'],
-        'pending_review' => ['yellow', 'Review'],
-        'draft'          => ['gray',   'Draft'],
-        'paused'         => ['gray',   'Paused'],
-        'rejected'       => ['red',    'Rejected'],
-        'completed'      => ['blue',   'Done'],
-    ];
-    [$color, $label] = $map[$status] ?? ['gray', ucfirst($status)];
-    return "<span class='badge badge-{$color}'>{$label}</span>";
-}
-?>
-
-<script>
-function showTab(name, btn) {
-    document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.getElementById('tab-' + name).style.display = 'block';
-    btn.classList.add('active');
-}
-</script>
+<section class="cta-section">
+  <h2 class="cta-title">Ready to advertise<br>without compromise?</h2>
+  <p class="cta-sub">No personal data required. Start in under 60 seconds.</p>
+  <a href="/register" class="btn-hero">Create free account &#x2192;</a>
+</section>
