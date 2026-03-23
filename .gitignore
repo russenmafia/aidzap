@@ -1,0 +1,17 @@
+# Umgebung
+.env
+.env.save
+
+# Logs & Cache
+storage/logs/*
+storage/cache/*
+!storage/logs/.gitkeep
+!storage/cache/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.swp
