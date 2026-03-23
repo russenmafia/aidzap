@@ -50,3 +50,15 @@ $router->get('/advertiser/campaigns/:uuid/banners/create',       [\Controllers\B
 $router->post('/advertiser/campaigns/:uuid/banners/create',      [\Controllers\BannerController::class, 'create']);
 $router->post('/advertiser/campaigns/:uuid/banners/:buuid/delete', [\Controllers\BannerController::class, 'delete']);
 $router->post('/advertiser/banners/generate-ai',                 [\Controllers\BannerController::class, 'generateAi']);
+
+// Payment
+$router->get('/advertiser/billing',  [\Controllers\PaymentController::class, 'billing']);
+$router->post('/payment/deposit',    [\Controllers\PaymentController::class, 'createDeposit']);
+$router->post('/advertiser/withdraw',[\Controllers\PaymentController::class, 'withdraw']);
+$router->post('/payment/ipn',        [\Controllers\PaymentController::class, 'ipn']);
+
+// Wallet Auth
+$router->get('/wallet/nonce',        [\Controllers\WalletAuthController::class, 'nonce']);
+$router->post('/wallet/message',     [\Controllers\WalletAuthController::class, 'message']);
+$router->post('/wallet/verify',      [\Controllers\WalletAuthController::class, 'verify']);
+$router->post('/wallet/link',        [\Controllers\WalletAuthController::class, 'link']);

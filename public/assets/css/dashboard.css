@@ -150,12 +150,15 @@
 .native-preview-title{font-size:13px;font-weight:500;color:#fff;margin-bottom:4px;line-height:1.4}
 .native-preview-desc{font-size:11px;color:rgba(255,255,255,0.35);line-height:1.5;margin-bottom:6px}
 .native-preview-cta{font-size:11px;color:#3ecf8e}
+
 .wizard-grid{display:grid;grid-template-columns:1fr 280px;gap:24px;align-items:start}
+.wizard-main{}
 .wizard-side{position:sticky;top:24px}
 .form-section{background:#0d1117;border:0.5px solid rgba(255,255,255,0.06);border-radius:14px;padding:24px;margin-bottom:16px}
 .form-section-title{font-size:14px;font-weight:500;color:#fff;margin-bottom:20px;display:flex;align-items:center;gap:10px}
 .form-step{width:22px;height:22px;border-radius:50%;background:rgba(62,207,142,0.15);border:0.5px solid rgba(62,207,142,0.3);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#3ecf8e;font-family:'DM Mono',monospace;flex-shrink:0}
 .form-section-opt{font-size:11px;color:rgba(255,255,255,0.25);font-weight:400;margin-left:auto}
+
 .model-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .model-card{cursor:pointer}
 .model-card input{display:none}
@@ -165,25 +168,63 @@
 .model-tag{display:block;font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:#3ecf8e;margin-bottom:4px}
 .model-name{display:block;font-size:13px;font-weight:500;color:#fff;margin-bottom:4px}
 .model-desc{display:block;font-size:11px;color:rgba(255,255,255,0.3);line-height:1.5}
+
 .checkbox-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
 .checkbox-pill{cursor:pointer}
 .checkbox-pill input{display:none}
 .checkbox-pill span{display:inline-block;padding:5px 12px;background:#080c10;border:0.5px solid rgba(255,255,255,0.1);border-radius:100px;font-size:12px;color:rgba(255,255,255,0.45);transition:all .15s}
 .checkbox-pill input:checked + span{border-color:#3ecf8e;color:#3ecf8e;background:rgba(62,207,142,0.06)}
 .checkbox-pill:hover span{border-color:rgba(255,255,255,0.25);color:rgba(255,255,255,0.7)}
+
 .summary-card{background:#0d1117;border:0.5px solid rgba(255,255,255,0.06);border-radius:14px;padding:20px}
 .summary-title{font-size:13px;font-weight:500;color:rgba(255,255,255,0.45);letter-spacing:.06em;text-transform:uppercase;margin-bottom:16px}
 .summary-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid rgba(255,255,255,0.04)}
+.summary-row:last-of-type{border-bottom:none}
 .summary-label{font-size:12px;color:rgba(255,255,255,0.35)}
 .summary-val{font-size:12px;color:#fff;font-family:'DM Mono',monospace;font-weight:500}
 .summary-divider{height:0.5px;background:rgba(255,255,255,0.06);margin:16px 0}
 .summary-note{font-size:12px;color:rgba(255,255,255,0.3);line-height:1.6;margin-bottom:12px}
 .summary-note strong{color:rgba(255,255,255,0.5)}
 .summary-privacy{font-size:11px;color:rgba(255,255,255,0.2);display:flex;gap:6px;align-items:flex-start;line-height:1.5}
+
 .budget-bar-wrap{padding:12px 20px;display:flex;align-items:center;gap:12px;border-top:0.5px solid rgba(255,255,255,0.04)}
 .budget-bar-track{flex:1;height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden}
-.budget-bar-fill{height:100%;background:#3ecf8e;border-radius:2px}
+.budget-bar-fill{height:100%;background:#3ecf8e;border-radius:2px;transition:width .3s}
 .budget-bar-pct{font-size:11px;color:rgba(255,255,255,0.3);font-family:'DM Mono',monospace;white-space:nowrap}
+
 .campaign-actions{padding:12px 20px;display:flex;gap:8px;border-top:0.5px solid rgba(255,255,255,0.04)}
 .action-btn{padding:6px 14px;font-size:12px;border:0.5px solid rgba(255,255,255,0.12);border-radius:6px;background:none;color:rgba(255,255,255,0.45);cursor:pointer;font-family:inherit;transition:all .15s;text-decoration:none;display:inline-block}
 .action-btn:hover{border-color:#3ecf8e;color:#3ecf8e}
+
+@media(max-width:900px){
+  .wizard-grid{grid-template-columns:1fr}
+  .wizard-side{position:static}
+  .model-grid{grid-template-columns:1fr}
+}
+
+.template-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tpl-card{cursor:pointer}
+.tpl-card input{display:none}
+.tpl-inner{display:block}
+.tpl-preview{display:flex;align-items:center;justify-content:center;height:70px;border-radius:8px;border:1.5px solid transparent;margin-bottom:6px;transition:all .2s}
+.tpl-card input:checked + .tpl-inner .tpl-preview{border-color:#3ecf8e}
+.tpl-name{display:block;font-size:12px;color:rgba(255,255,255,0.45);text-align:center}
+.tpl-card input:checked + .tpl-inner .tpl-name{color:#fff}
+
+.upload-zone{border:1.5px dashed rgba(255,255,255,0.12);border-radius:12px;padding:32px;text-align:center;transition:all .2s;cursor:pointer}
+.upload-zone.drag,.upload-zone:hover{border-color:rgba(62,207,142,0.4);background:rgba(62,207,142,0.03)}
+.upload-icon{font-size:28px;color:rgba(255,255,255,0.2);margin-bottom:10px}
+.upload-text{font-size:14px;color:rgba(255,255,255,0.5);margin-bottom:6px}
+.upload-link{background:none;border:none;color:#3ecf8e;cursor:pointer;font-size:14px;font-family:inherit;text-decoration:underline;padding:0}
+.upload-hint{font-size:12px;color:rgba(255,255,255,0.25)}
+
+.btn-ai-generate{padding:10px 20px;background:rgba(127,119,221,0.1);border:0.5px solid rgba(127,119,221,0.3);color:#afa9ec;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .2s;margin-top:12px}
+.btn-ai-generate:hover{background:rgba(127,119,221,0.2)}
+.btn-ai-generate:disabled{opacity:.5;cursor:not-allowed}
+
+.deposit-box{background:#080c10;border:0.5px solid rgba(62,207,142,0.2);border-radius:12px;padding:20px}
+.deposit-label{font-size:11px;color:rgba(255,255,255,0.3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+.deposit-amount{font-size:24px;font-weight:300;color:#3ecf8e;font-family:'DM Mono',monospace}
+.deposit-address{font-family:'DM Mono',monospace;font-size:13px;color:#fff;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);border-radius:8px;padding:12px;word-break:break-all;cursor:pointer;transition:background .2s}
+.deposit-address:hover{background:rgba(255,255,255,0.07)}
+.deposit-note{font-size:11px;color:rgba(255,255,255,0.25);margin-top:16px;line-height:1.6;padding:10px;background:rgba(250,199,117,0.04);border:0.5px solid rgba(250,199,117,0.1);border-radius:6px}
