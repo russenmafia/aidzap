@@ -81,3 +81,6 @@ $router->post('/account/settings/token/revoke',    [\Controllers\AccountControll
 $router->post('/account/settings/wallet/link',     [\Controllers\AccountController::class, 'linkWallet']);
 $router->post('/account/settings/wallet/unlink',   [\Controllers\AccountController::class, 'unlinkWallet']);
 $router->post('/account/settings/delete',          [\Controllers\AccountController::class, 'deleteAccount']);
+
+// Publisher Earnings
+$router->get('/publisher/earnings', [\Controllers\EarningsController::class, 'index']);
