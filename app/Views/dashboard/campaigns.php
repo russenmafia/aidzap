@@ -8,6 +8,18 @@
 <?php if (isset($_GET['created'])): ?>
 <div class="flash flash-success">Campaign created as draft. Add a banner to submit for review.</div>
 <?php endif; ?>
+<?php if (isset($_GET['updated'])): ?>
+<div class="flash flash-success">Campaign updated successfully.</div>
+<?php endif; ?>
+<?php if (isset($_GET['toggled'])): ?>
+<div class="flash flash-success">Campaign status updated.</div>
+<?php endif; ?>
+
+<?php if (!empty($balance) && $balance > 0): ?>
+<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-bottom:16px">
+  Available balance: <strong style="color:#3ecf8e"><?= number_format($balance, 8) ?> BTC</strong>
+</div>
+<?php endif; ?>
 
 <?php if (empty($campaigns)): ?>
 <div class="empty-state">
@@ -63,10 +75,13 @@
 
   <div class="campaign-actions">
     <a href="/advertiser/campaigns/<?= $c['uuid'] ?>/banners" class="action-btn">Manage Banners</a>
-    <?php if ($c['status'] === 'active'): ?>
-    <a href="/advertiser/campaigns/<?= $c['uuid'] ?>/pause" class="action-btn">Pause</a>
-    <?php elseif ($c['status'] === 'paused'): ?>
-    <a href="/advertiser/campaigns/<?= $c['uuid'] ?>/resume" class="action-btn">Resume</a>
+    <a href="/advertiser/campaigns/<?= $c['uuid'] ?>/edit" class="action-btn">Edit</a>
+    <?php if (in_array($c['status'], ['active','paused','draft'])): ?>
+    <form method="POST" action="/advertiser/campaigns/<?= $c['uuid'] ?>/toggle" style="display:inline">
+      <button class="action-btn <?= $c['status'] === 'active' ? '' : 'style="color:#3ecf8e"' ?>">
+        <?= $c['status'] === 'active' ? 'Pause' : 'Activate' ?>
+      </button>
+    </form>
     <?php endif; ?>
   </div>
 

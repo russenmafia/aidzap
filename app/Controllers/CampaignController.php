@@ -143,3 +143,129 @@ class CampaignController
             mt_rand(0,0xffff),mt_rand(0,0xffff),mt_rand(0,0xffff));
     }
 }
+
+    // ── Edit Formular ─────────────────────────────────────────────────────
+    public function editForm(string $uuid): void
+    {
+        Auth::require();
+        $db   = Database::getInstance();
+        $stmt = $db->prepare('SELECT * FROM campaigns WHERE uuid = ? AND user_id = ? LIMIT 1');
+        $stmt->execute([$uuid, Auth::id()]);
+        $campaign = $stmt->fetch();
+
+        if (!$campaign) { http_response_code(404); echo 'Not found'; return; }
+
+        $categories = $db->query('SELECT * FROM ad_categories ORDER BY name')->fetchAll();
+
+        $balStmt = $db->prepare('SELECT COALESCE(SUM(amount),0) FROM balances WHERE user_id = ? AND currency = "BTC"');
+        $balStmt->execute([Auth::id()]);
+        $balance = (float)$balStmt->fetchColumn();
+
+        View::render('dashboard/campaign-edit', [
+            'title'      => 'Edit Campaign',
+            'active'     => 'campaigns',
+            'campaign'   => $campaign,
+            'categories' => $categories,
+            'balance'    => $balance,
+            'csrf_token' => Auth::csrfToken(),
+            'errors'     => [],
+        ], 'dashboard');
+    }
+
+    // ── Edit Speichern ────────────────────────────────────────────────────
+    public function edit(string $uuid): void
+    {
+        Auth::require();
+        Auth::csrfVerify($_POST['csrf_token'] ?? '');
+
+        $db   = Database::getInstance();
+        $stmt = $db->prepare('SELECT * FROM campaigns WHERE uuid = ? AND user_id = ? LIMIT 1');
+        $stmt->execute([$uuid, Auth::id()]);
+        $campaign = $stmt->fetch();
+
+        if (!$campaign) { http_response_code(404); return; }
+
+        $errors      = [];
+        $name        = trim($_POST['name'] ?? '');
+        $targetUrl   = trim($_POST['target_url'] ?? '');
+        $bidAmount   = (float)($_POST['bid_amount'] ?? 0);
+        $dailyBudget = (float)($_POST['daily_budget'] ?? 0);
+        $totalBudget = (float)($_POST['total_budget'] ?? 0);
+        $startsAt    = $_POST['starts_at'] ?? null;
+        $endsAt      = $_POST['ends_at'] ?? null;
+        $status      = $_POST['status'] ?? $campaign['status'];
+
+        if (strlen($name) < 2)                         $errors[] = 'Campaign name required.';
+        if (!filter_var($targetUrl, FILTER_VALIDATE_URL)) $errors[] = 'Valid target URL required.';
+        if ($bidAmount <= 0)                           $errors[] = 'Bid amount must be greater than 0.';
+        if ($dailyBudget <= 0)                         $errors[] = 'Daily budget required.';
+
+        // Bei Reaktivierung Guthaben prüfen
+        if (empty($errors) && $status === 'active' && $campaign['status'] !== 'active') {
+            $balStmt = $db->prepare('SELECT COALESCE(SUM(amount),0) FROM balances WHERE user_id = ? AND currency = "BTC"');
+            $balStmt->execute([Auth::id()]);
+            $balance = (float)$balStmt->fetchColumn();
+
+            if ($balance < $dailyBudget) {
+                header('Location: /advertiser/billing?insufficient=1&needed=' . urlencode(number_format($dailyBudget, 8)));
+                exit;
+            }
+        }
+
+        if (!empty($errors)) {
+            $categories = $db->query('SELECT * FROM ad_categories ORDER BY name')->fetchAll();
+            View::render('dashboard/campaign-edit', [
+                'title'      => 'Edit Campaign',
+                'active'     => 'campaigns',
+                'campaign'   => array_merge($campaign, $_POST),
+                'categories' => $categories,
+                'balance'    => 0,
+                'csrf_token' => Auth::csrfToken(),
+                'errors'     => $errors,
+            ], 'dashboard');
+            return;
+        }
+
+        $allowedStatuses = ['draft', 'paused', 'active'];
+        if (!in_array($status, $allowedStatuses, true)) $status = $campaign['status'];
+
+        $db->prepare('
+            UPDATE campaigns SET
+                name         = ?,
+                target_url   = ?,
+                bid_amount   = ?,
+                daily_budget = ?,
+                total_budget = ?,
+                starts_at    = ?,
+                ends_at      = ?,
+                status       = ?
+            WHERE uuid = ? AND user_id = ?
+        ')->execute([
+            $name, $targetUrl, $bidAmount, $dailyBudget,
+            $totalBudget ?: null,
+            $startsAt ?: null,
+            $endsAt   ?: null,
+            $status,
+            $uuid, Auth::id(),
+        ]);
+
+        header('Location: /advertiser/campaigns?updated=1'); exit;
+    }
+
+    // ── Kampagne pausieren/aktivieren ─────────────────────────────────────
+    public function toggleStatus(string $uuid): void
+    {
+        Auth::require();
+        $db   = Database::getInstance();
+        $stmt = $db->prepare('SELECT status FROM campaigns WHERE uuid = ? AND user_id = ? LIMIT 1');
+        $stmt->execute([$uuid, Auth::id()]);
+        $campaign = $stmt->fetch();
+
+        if (!$campaign) { http_response_code(404); return; }
+
+        $newStatus = $campaign['status'] === 'active' ? 'paused' : 'active';
+        $db->prepare('UPDATE campaigns SET status = ? WHERE uuid = ? AND user_id = ?')
+           ->execute([$newStatus, $uuid, Auth::id()]);
+
+        header('Location: /advertiser/campaigns?toggled=1'); exit;
+    }

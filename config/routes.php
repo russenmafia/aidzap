@@ -88,3 +88,14 @@ $router->get('/publisher/earnings', [\Controllers\EarningsController::class, 'in
 // Banners Overview + Withdraw
 $router->get('/advertiser/banners',  [\Controllers\BannersOverviewController::class, 'index']);
 $router->get('/publisher/withdraw',  [\Controllers\WithdrawController::class, 'index']);
+
+// Referrals
+$router->get('/referrals',           [\Controllers\ReferralController::class, 'index']);
+$router->get('/r/:code',             [\Controllers\ReferralController::class, 'redirect']);
+$router->get('/admin/referrals',     [\Controllers\AdminReferralController::class, 'index']);
+$router->post('/admin/referrals/save', [\Controllers\AdminReferralController::class, 'save']);
+
+// Campaign Edit
+$router->get('/advertiser/campaigns/:uuid/edit',  [\Controllers\CampaignController::class, 'editForm']);
+$router->post('/advertiser/campaigns/:uuid/edit', [\Controllers\CampaignController::class, 'edit']);
+$router->post('/advertiser/campaigns/:uuid/toggle', [\Controllers\CampaignController::class, 'toggleStatus']);
