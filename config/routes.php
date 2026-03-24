@@ -67,3 +67,17 @@ $router->post('/wallet/link',        [\Controllers\WalletAuthController::class, 
 $router->get('/admin/crons',          [\Controllers\AdminController::class, 'crons']);
 $router->post('/admin/crons/run',     [\Controllers\AdminController::class, 'runCron']);
 $router->get('/admin/crons/run-http', [\Controllers\AdminController::class, 'runCronHttp']);
+
+// Account
+$router->get('/account/wallets',                   [\Controllers\AccountController::class, 'wallets']);
+$router->post('/account/wallets/add',              [\Controllers\AccountController::class, 'addWallet']);
+$router->post('/account/wallets/delete',           [\Controllers\AccountController::class, 'deleteWallet']);
+$router->post('/account/wallets/default',          [\Controllers\AccountController::class, 'setDefaultWallet']);
+$router->get('/account/settings',                  [\Controllers\AccountController::class, 'settings']);
+$router->post('/account/settings/username',        [\Controllers\AccountController::class, 'updateUsername']);
+$router->post('/account/settings/password',        [\Controllers\AccountController::class, 'updatePassword']);
+$router->post('/account/settings/token/generate',  [\Controllers\AccountController::class, 'generateApiToken']);
+$router->post('/account/settings/token/revoke',    [\Controllers\AccountController::class, 'revokeApiToken']);
+$router->post('/account/settings/wallet/link',     [\Controllers\AccountController::class, 'linkWallet']);
+$router->post('/account/settings/wallet/unlink',   [\Controllers\AccountController::class, 'unlinkWallet']);
+$router->post('/account/settings/delete',          [\Controllers\AccountController::class, 'deleteAccount']);
