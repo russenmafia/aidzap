@@ -51,17 +51,17 @@ class ReferralService
 
         // Level 1 eintragen
         $this->db->prepare('
-            INSERT IGNORE INTO referrals (referrer_id, referred_id, level, ref_code)
+            INSERT IGNORE INTO referrals (user_id, referred_by, level, ref_code)
             VALUES (?,?,1,?)
         ')->execute([$referrerId, $newUserId, $refCode]);
 
         // Level 2: Wer hat den Referrer geworben?
-        $stmt = $this->db->prepare('SELECT referrer_id FROM referrals WHERE referred_id = ? LIMIT 1');
+        $stmt = $this->db->prepare('SELECT user_id FROM referrals WHERE referred_by = ? LIMIT 1');
         $stmt->execute([$referrerId]);
         $level2 = $stmt->fetchColumn();
         if ($level2) {
             $this->db->prepare('
-                INSERT IGNORE INTO referrals (referrer_id, referred_id, level, ref_code)
+                INSERT IGNORE INTO referrals (user_id, referred_by, level, ref_code)
                 VALUES (?,?,2,?)
             ')->execute([(int)$level2, $newUserId, $refCode]);
 
@@ -70,7 +70,7 @@ class ReferralService
             $level3 = $stmt->fetchColumn();
             if ($level3) {
                 $this->db->prepare('
-                    INSERT IGNORE INTO referrals (referrer_id, referred_id, level, ref_code)
+                    INSERT IGNORE INTO referrals (user_id, referred_by, level, ref_code)
                     VALUES (?,?,3,?)
                 ')->execute([(int)$level3, $newUserId, $refCode]);
             }
@@ -94,7 +94,7 @@ class ReferralService
 
         $pcts = [1 => $settings['level1_pct'], 2 => $settings['level2_pct'], 3 => $settings['level3_pct']];
 
-        $stmt = $this->db->prepare('SELECT referrer_id, level FROM referrals WHERE referred_id = ?');
+        $stmt = $this->db->prepare('SELECT user_id, level FROM referrals WHERE referred_by = ?');
         $stmt->execute([$publisherId]);
 
         foreach ($stmt->fetchAll() as $row) {
@@ -102,7 +102,7 @@ class ReferralService
             $commission = round($amount * $pct / 100, 8);
             if ($commission <= 0) continue;
 
-            $this->creditCommission((int)$row['referrer_id'], $publisherId, $row['level'],
+            $this->creditCommission((int)$row['user_id'], $publisherId, $row['level'],
                 'earnings', $amount, $pct, $commission);
         }
     }
@@ -115,7 +115,7 @@ class ReferralService
 
         $pcts = [1 => $settings['level1_pct'], 2 => $settings['level2_pct'], 3 => $settings['level3_pct']];
 
-        $stmt = $this->db->prepare('SELECT referrer_id, level FROM referrals WHERE referred_id = ?');
+        $stmt = $this->db->prepare('SELECT user_id, level FROM referrals WHERE referred_by = ?');
         $stmt->execute([$advertiserId]);
 
         foreach ($stmt->fetchAll() as $row) {
@@ -123,7 +123,7 @@ class ReferralService
             $commission = round($amount * $pct / 100, 8);
             if ($commission <= 0) continue;
 
-            $this->creditCommission((int)$row['referrer_id'], $advertiserId, $row['level'],
+            $this->creditCommission((int)$row['user_id'], $advertiserId, $row['level'],
                 'spend', $amount, $pct, $commission);
         }
     }
@@ -156,7 +156,7 @@ class ReferralService
                    SUM(CASE WHEN level=1 THEN 1 ELSE 0 END) AS level1,
                    SUM(CASE WHEN level=2 THEN 1 ELSE 0 END) AS level2,
                    SUM(CASE WHEN level=3 THEN 1 ELSE 0 END) AS level3
-            FROM referrals WHERE referrer_id = ?
+            FROM referrals WHERE user_id = ?
         ');
         $stmt->execute([$userId]);
         $counts = $stmt->fetch();
@@ -176,8 +176,8 @@ class ReferralService
         $stmt = $this->db->prepare('
             SELECT r.*, u.username, u.created_at AS user_joined
             FROM referrals r
-            JOIN users u ON u.id = r.referred_id
-            WHERE r.referrer_id = ?
+            JOIN users u ON u.id = r.referred_by
+            WHERE r.user_id = ?
             ORDER BY r.created_at DESC
             LIMIT 20
         ');
