@@ -84,3 +84,7 @@ $router->post('/account/settings/delete',          [\Controllers\AccountControll
 
 // Publisher Earnings
 $router->get('/publisher/earnings', [\Controllers\EarningsController::class, 'index']);
+
+// Banners Overview + Withdraw
+$router->get('/advertiser/banners',  [\Controllers\BannersOverviewController::class, 'index']);
+$router->get('/publisher/withdraw',  [\Controllers\WithdrawController::class, 'index']);
