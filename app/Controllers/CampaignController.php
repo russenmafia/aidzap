@@ -9,86 +9,130 @@ use Core\View;
 
 class CampaignController
 {
+    // ── Liste ─────────────────────────────────────────────────────────────
     public function index(): void
     {
         Auth::require();
-        $campaigns = Database::getInstance()->prepare('
-            SELECT c.*, COUNT(b.id) AS banner_count
+        $db   = Database::getInstance();
+        $stmt = $db->prepare('
+            SELECT c.*,
+                   COUNT(b.id) AS banner_count,
+                   COUNT(CASE WHEN b.status="active" THEN 1 END) AS active_banners
             FROM campaigns c
             LEFT JOIN ad_banners b ON b.campaign_id = c.id
             WHERE c.user_id = ?
             GROUP BY c.id
             ORDER BY c.created_at DESC
         ');
-        $campaigns->execute([Auth::id()]);
+        $stmt->execute([Auth::id()]);
+
+        // Balance holen
+        $balStmt = $db->prepare('SELECT COALESCE(SUM(amount),0) FROM balances WHERE user_id = ? AND currency = "BTC"');
+        $balStmt->execute([Auth::id()]);
+        $balance = (float)$balStmt->fetchColumn();
 
         View::render('dashboard/campaigns', [
             'title'     => 'Campaigns',
-            'campaigns' => $campaigns->fetchAll(),
+            'active'    => 'campaigns',
+            'campaigns' => $stmt->fetchAll(),
+            'balance'   => $balance,
         ], 'dashboard');
     }
 
+    // ── Formular ──────────────────────────────────────────────────────────
     public function createForm(): void
     {
         Auth::require();
-        $cats = Database::getInstance()->query('SELECT id, name FROM ad_categories WHERE is_active = 1 ORDER BY name')->fetchAll();
+        $db = Database::getInstance();
+
+        // Balance prüfen
+        $balStmt = $db->prepare('SELECT COALESCE(SUM(amount),0) FROM balances WHERE user_id = ? AND currency = "BTC"');
+        $balStmt->execute([Auth::id()]);
+        $balance = (float)$balStmt->fetchColumn();
+
+        $categories = $db->query('SELECT * FROM ad_categories ORDER BY name')->fetchAll();
+
         View::render('dashboard/campaign-create', [
             'title'      => 'New Campaign',
-            'categories' => $cats,
+            'active'     => 'campaigns',
+            'categories' => $categories,
+            'balance'    => $balance,
+            'csrf_token' => Auth::csrfToken(),
             'errors'     => [],
             'old'        => [],
-            'csrf_token' => \Core\Auth::csrfToken(),
         ], 'dashboard');
     }
 
+    // ── Speichern ─────────────────────────────────────────────────────────
     public function create(): void
     {
         Auth::require();
-        \Core\Auth::csrfVerify($_POST['csrf_token'] ?? '');
+        Auth::csrfVerify($_POST['csrf_token'] ?? '');
 
+        $db      = Database::getInstance();
+        $userId  = Auth::id();
+        $errors  = [];
+
+        // Felder
         $name         = trim($_POST['name'] ?? '');
-        $model        = $_POST['pricing_model'] ?? 'cpd';
+        $targetUrl    = trim($_POST['target_url'] ?? '');
+        $pricingModel = $_POST['pricing_model'] ?? 'cpm';
+        $bidAmount    = (float)($_POST['bid_amount'] ?? 0);
         $dailyBudget  = (float)($_POST['daily_budget'] ?? 0);
         $totalBudget  = (float)($_POST['total_budget'] ?? 0);
-        $bidAmount    = (float)($_POST['bid_amount'] ?? 0);
-        $targetUrl    = trim($_POST['target_url'] ?? '');
-        $currency     = $_POST['currency'] ?? 'BTC';
-        $errors       = [];
+        $currency     = 'BTC';
+        $startsAt     = $_POST['starts_at'] ?? null;
+        $endsAt       = $_POST['ends_at'] ?? null;
 
-        if (strlen($name) < 3)    $errors[] = 'Campaign name must be at least 3 characters.';
-        if (!filter_var($targetUrl, FILTER_VALIDATE_URL)) $errors[] = 'Please enter a valid target URL.';
-        if ($dailyBudget <= 0)    $errors[] = 'Daily budget must be greater than 0.';
-        if ($totalBudget <= 0)    $errors[] = 'Total budget must be greater than 0.';
-        if ($bidAmount <= 0)      $errors[] = 'Bid amount must be greater than 0.';
-        if (!in_array($model, ['cpd','cpm','cpa'], true)) $errors[] = 'Invalid pricing model.';
+        // Validierung
+        if (strlen($name) < 2)                    $errors[] = 'Campaign name required.';
+        if (!filter_var($targetUrl, FILTER_VALIDATE_URL)) $errors[] = 'Valid target URL required.';
+        if (!in_array($pricingModel, ['cpm','cpd','cpa'], true)) $errors[] = 'Invalid pricing model.';
+        if ($bidAmount <= 0)                       $errors[] = 'Bid amount must be greater than 0.';
+        if ($dailyBudget <= 0)                     $errors[] = 'Daily budget required.';
+
+        // Guthaben prüfen: mind. 1 Tag Budget
+        if (empty($errors)) {
+            $balStmt = $db->prepare('SELECT COALESCE(SUM(amount),0) FROM balances WHERE user_id = ? AND currency = "BTC"');
+            $balStmt->execute([$userId]);
+            $balance = (float)$balStmt->fetchColumn();
+
+            if ($balance < $dailyBudget) {
+                // Zur Billing-Seite weiterleiten mit Hinweis
+                header('Location: /advertiser/billing?insufficient=1&needed=' . urlencode(number_format($dailyBudget, 8)));
+                exit;
+            }
+        }
 
         if (!empty($errors)) {
-            $cats = Database::getInstance()->query('SELECT id, name FROM ad_categories WHERE is_active = 1')->fetchAll();
+            $categories = $db->query('SELECT * FROM ad_categories ORDER BY name')->fetchAll();
+            $balStmt->execute([$userId]);
             View::render('dashboard/campaign-create', [
                 'title'      => 'New Campaign',
-                'categories' => $cats,
+                'active'     => 'campaigns',
+                'categories' => $categories,
+                'balance'    => (float)$balStmt->fetchColumn(),
+                'csrf_token' => Auth::csrfToken(),
                 'errors'     => $errors,
                 'old'        => $_POST,
-                'csrf_token' => \Core\Auth::csrfToken(),
             ], 'dashboard');
             return;
         }
 
-        $db   = Database::getInstance();
         $uuid = $this->uuid();
-
-        $countries   = !empty($_POST['countries']) ? json_encode(array_map('trim', explode(',', $_POST['countries']))) : null;
-        $categories  = !empty($_POST['category_ids']) ? json_encode($_POST['category_ids']) : null;
-
         $db->prepare('
             INSERT INTO campaigns
-                (uuid, user_id, name, pricing_model, daily_budget, total_budget,
-                 bid_amount, target_url, currency, target_countries, target_categories, status)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,"draft")
-        ')->execute([$uuid, Auth::id(), $name, $model, $dailyBudget, $totalBudget,
-                     $bidAmount, $targetUrl, $currency, $countries, $categories]);
+                (uuid, user_id, name, status, pricing_model, bid_amount,
+                 daily_budget, total_budget, spent, currency,
+                 target_url, starts_at, ends_at, created_at)
+            VALUES (?,?,?,?,?,?,?,?,0,?,?,?,?, NOW())
+        ')->execute([
+            $uuid, $userId, $name, 'draft', $pricingModel, $bidAmount,
+            $dailyBudget, $totalBudget ?: null, $currency, $targetUrl,
+            $startsAt ?: null, $endsAt ?: null,
+        ]);
 
-        header('Location: /advertiser/campaigns?created=1'); exit;
+        header('Location: /advertiser/campaigns/' . $uuid . '/banners/create?new=1'); exit;
     }
 
     private function uuid(): string

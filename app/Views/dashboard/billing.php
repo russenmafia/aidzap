@@ -4,6 +4,13 @@
   <h1 class="page-title">Billing</h1>
 </div>
 
+<?php if (isset($_GET['insufficient'])): ?>
+<div class="flash flash-error" style="border-color:rgba(250,199,117,0.3);background:rgba(250,199,117,0.06)">
+  <strong style="color:#fac775">⚠ Insufficient balance</strong><br>
+  You need at least <strong style="color:#fff"><?= htmlspecialchars($_GET['needed'] ?? '0') ?> BTC</strong>
+  to start this campaign (= 1 day budget). Please make a deposit first.
+</div>
+<?php endif; ?>
 <?php if (isset($_GET['paid'])): ?>
 <div class="flash flash-success">Payment received! Your balance will be updated after confirmation.</div>
 <?php endif; ?>
