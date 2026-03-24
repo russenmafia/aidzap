@@ -62,3 +62,8 @@ $router->get('/wallet/nonce',        [\Controllers\WalletAuthController::class, 
 $router->post('/wallet/message',     [\Controllers\WalletAuthController::class, 'message']);
 $router->post('/wallet/verify',      [\Controllers\WalletAuthController::class, 'verify']);
 $router->post('/wallet/link',        [\Controllers\WalletAuthController::class, 'link']);
+
+// Cron Admin
+$router->get('/admin/crons',          [\Controllers\AdminController::class, 'crons']);
+$router->post('/admin/crons/run',     [\Controllers\AdminController::class, 'runCron']);
+$router->get('/admin/crons/run-http', [\Controllers\AdminController::class, 'runCronHttp']);

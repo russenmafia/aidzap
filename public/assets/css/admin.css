@@ -24,3 +24,10 @@
 .sb-badge{margin-left:auto;background:#e05454;color:#fff;font-size:10px;font-weight:500;padding:1px 6px;border-radius:100px;font-family:'DM Mono',monospace}
 @media(max-width:1100px){.admin-metrics{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:700px){.admin-metrics{grid-template-columns:repeat(2,1fr)}}
+.cron-tab-group{display:flex;gap:4px;background:rgba(255,255,255,0.04);border-radius:8px;padding:4px;margin-bottom:12px;width:fit-content}
+.cron-tab{padding:6px 14px;font-size:12px;border-radius:6px;cursor:pointer;color:rgba(255,255,255,0.4);border:none;background:none;font-family:inherit;transition:all .15s}
+.cron-tab.active{background:#0d1117;color:#fff;border:0.5px solid rgba(255,255,255,0.08)}
+.cron-block{background:#080c10;border:0.5px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.cron-line{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.02);border-radius:6px;padding:8px 12px}
+.cron-line code{flex:1;font-family:'DM Mono',monospace;font-size:11px;color:#3ecf8e;word-break:break-all}
+.cron-copy-all{display:flex;justify-content:flex-end;padding-top:4px}

@@ -51,6 +51,9 @@ $active = $active ?? '';
       <a href="/admin/fraud" class="sb-item <?= $active === 'fraud' ? 'active' : '' ?>">
         <span class="sb-icon">&#9645;</span> Fraud Logs
       </a>
+      <a href="/admin/crons" class="sb-item <?= $active === 'crons' ? 'active' : '' ?>">
+        <span class="sb-icon">&#9680;</span> Cron Jobs
+      </a>
 
       <div class="sb-section">Navigation</div>
       <a href="/dashboard" class="sb-item">

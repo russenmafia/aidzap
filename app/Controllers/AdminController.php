@@ -267,3 +267,54 @@ class AdminController
         header('Location: /admin/fraud?done=1'); exit;
     }
 }
+
+    // ── Cron Overview ────────────────────────────────────────────────────────
+    public function crons(): void
+    {
+        AdminAuth::require();
+        View::render('admin/crons', [
+            'title'  => 'Cron Jobs',
+            'active' => 'crons',
+        ], 'admin');
+    }
+
+    // ── Cron manuell ausführen (POST) ─────────────────────────────────────
+    public function runCron(): void
+    {
+        AdminAuth::require();
+        $job     = $_POST['job'] ?? '';
+        $allowed = ['daily-stats','budget-reset','fraud-cleanup','payment-check'];
+
+        if (!in_array($job, $allowed, true)) {
+            header('Location: /admin/crons'); exit;
+        }
+
+        $runner = BASE_PATH . '/cron/runner.php';
+        $logFile= STORAGE_PATH . '/logs/cron.log';
+
+        $output = shell_exec("php {$runner} {$job} 2>&1");
+        file_put_contents($logFile, $output, FILE_APPEND);
+
+        header('Location: /admin/crons?ran=' . urlencode($job)); exit;
+    }
+
+    // ── Cron via HTTP (für cURL/wget Crontab) ────────────────────────────
+    public function runCronHttp(): void
+    {
+        $secret = $_GET['secret'] ?? '';
+        if (!hash_equals($_ENV['APP_SECRET'] ?? '', $secret)) {
+            http_response_code(403); echo 'Forbidden'; return;
+        }
+
+        $job     = $_GET['job'] ?? '';
+        $allowed = ['daily-stats','budget-reset','fraud-cleanup','payment-check'];
+        if (!in_array($job, $allowed, true)) {
+            http_response_code(400); echo 'Invalid job'; return;
+        }
+
+        $runner = BASE_PATH . '/cron/runner.php';
+        $output = shell_exec("php {$runner} {$job} 2>&1");
+
+        header('Content-Type: text/plain');
+        echo $output;
+    }
