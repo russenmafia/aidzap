@@ -1,7 +1,12 @@
 <?php
-// $user muss immer gesetzt sein – Fallback verhindert Notices
-$user   = $user   ?? ['username' => '', 'role' => 'both'];
+$user   = $user ?? null;
 $active = $active ?? '';
+if (!$user && isset($_SESSION['user_id'])) {
+    $stmt = \Core\Database::getInstance()->prepare('SELECT username, role FROM users WHERE id = ? LIMIT 1');
+    $stmt->execute([$_SESSION['user_id']]);
+    $user = $stmt->fetch() ?: ['username' => '', 'role' => 'both'];
+}
+$user = $user ?? ['username' => '', 'role' => 'both'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -27,7 +32,7 @@ $active = $active ?? '';
         <span class="sb-icon">&#9672;</span> Dashboard
       </a>
 
-      <?php if (in_array($user['role'], ['publisher','both'])): ?>
+      <?php if (in_array($user['role'], ['publisher','both','admin'])): ?>
       <div class="sb-section">Publisher</div>
       <a href="/publisher/units" class="sb-item <?= $active === 'units' ? 'active' : '' ?>">
         <span class="sb-icon">&#9635;</span> Ad Units
@@ -40,7 +45,7 @@ $active = $active ?? '';
       </a>
       <?php endif; ?>
 
-      <?php if (in_array($user['role'], ['advertiser','both'])): ?>
+      <?php if (in_array($user['role'], ['advertiser','both','admin'])): ?>
       <div class="sb-section">Advertiser</div>
       <a href="/advertiser/campaigns" class="sb-item <?= $active === 'campaigns' ? 'active' : '' ?>">
         <span class="sb-icon">&#9672;</span> Campaigns
@@ -69,7 +74,7 @@ $active = $active ?? '';
         <div class="sb-username"><?= htmlspecialchars($user['username']) ?></div>
         <div class="sb-role"><?= htmlspecialchars(ucfirst($user['role'])) ?></div>
       </div>
-      <a href="/logout" class="sb-logout" title="Logout">&#x2192;</a>
+      <?php if(\Core\AdminAuth::isAdmin()): ?><a href="/admin" style="font-size:11px;color:#e05454;margin-left:auto;text-decoration:none">Admin</a><?php endif; ?><a href="/logout" class="sb-logout" title="Logout">&#x2192;</a>
     </div>
   </aside>
 

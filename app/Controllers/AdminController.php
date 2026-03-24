@@ -266,7 +266,6 @@ class AdminController
         }
         header('Location: /admin/fraud?done=1'); exit;
     }
-}
 
     // ── Cron Overview ────────────────────────────────────────────────────────
     public function crons(): void
@@ -318,3 +317,5 @@ class AdminController
         header('Content-Type: text/plain');
         echo $output;
     }
+}
+
