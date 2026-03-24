@@ -228,3 +228,12 @@
 .deposit-address{font-family:'DM Mono',monospace;font-size:13px;color:#fff;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);border-radius:8px;padding:12px;word-break:break-all;cursor:pointer;transition:background .2s}
 .deposit-address:hover{background:rgba(255,255,255,0.07)}
 .deposit-note{font-size:11px;color:rgba(255,255,255,0.25);margin-top:16px;line-height:1.6;padding:10px;background:rgba(250,199,117,0.04);border:0.5px solid rgba(250,199,117,0.1);border-radius:6px}
+
+.share-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .2s;color:#fff}
+.share-icon{font-size:14px;width:18px;text-align:center}
+.share-facebook{background:#1877f2}.share-facebook:hover{background:#0d6edb}
+.share-twitter{background:#000}.share-twitter:hover{background:#333}
+.share-telegram{background:#0088cc}.share-telegram:hover{background:#0077b5}
+.share-whatsapp{background:#25d366}.share-whatsapp:hover{background:#1ebe5d;color:#000}
+.share-reddit{background:#ff4500}.share-reddit:hover{background:#e03d00}
+.share-linkedin{background:#0a66c2}.share-linkedin:hover{background:#0958a8}

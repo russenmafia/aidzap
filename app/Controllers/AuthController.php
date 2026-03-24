@@ -61,7 +61,16 @@ class AuthController
         $db->prepare('INSERT INTO users (uuid, username, password_hash, role) VALUES (?,?,?,?)')
            ->execute([$uuid, $username, $hash, $role]);
 
-        Auth::login((int)$db->lastInsertId());
+        $userId = (int)$db->lastInsertId();
+
+        // Referral verarbeiten
+        $refCode = $_SESSION['ref_code'] ?? $_COOKIE['ref_code'] ?? null;
+        if ($refCode) {
+            (new \Services\ReferralService())->processSignup($userId, $refCode);
+            unset($_SESSION['ref_code']);
+        }
+
+        Auth::login($userId);
         header('Location: /dashboard'); exit;
     }
 
