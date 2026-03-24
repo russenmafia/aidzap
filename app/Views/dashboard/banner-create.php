@@ -151,15 +151,31 @@
                 placeholder="e.g. Dark crypto exchange banner with Bitcoin logo, headline 'Trade BTC with 0 fees', green CTA button 'Start Now'"><?= htmlspecialchars($old['ai_prompt'] ?? '') ?></textarea>
       <span class="field-hint">Be specific about colors, text, style and your target audience.</span>
     </div>
+    <?php
+    $db = \Core\Database::getInstance();
+    $aiSettings = $db->query('SELECT ai_banner_enabled, ai_banner_price FROM referral_settings WHERE id = 1 LIMIT 1')->fetch();
+    $aiPrice = (float)($aiSettings['ai_banner_price'] ?? 0);
+    $aiEnabled = (bool)($aiSettings['ai_banner_enabled'] ?? true);
+    ?>
+    <?php if (!$aiEnabled): ?>
+    <div style="padding:12px;background:rgba(224,84,84,0.08);border:0.5px solid rgba(224,84,84,0.2);border-radius:8px;font-size:13px;color:rgba(255,255,255,0.5)">
+      AI banner generation is currently disabled.
+    </div>
+    <?php else: ?>
+    <?php if ($aiPrice > 0): ?>
+    <div style="padding:10px 14px;background:rgba(250,199,117,0.06);border:0.5px solid rgba(250,199,117,0.15);border-radius:8px;font-size:12px;color:rgba(250,199,117,0.8);margin-bottom:10px">
+      ⚡ Each generation costs <strong><?= number_format($aiPrice, 8) ?> BTC</strong> and will be deducted from your balance.
+    </div>
+    <?php endif; ?>
     <button type="button" class="btn-ai-generate" onclick="generateAiBanner()" id="ai-btn">
-      <span id="ai-btn-text">&#9672; Generate Banner</span>
+      <span id="ai-btn-text">&#9672; Generate Banner<?= $aiPrice > 0 ? ' (' . number_format($aiPrice, 8) . ' BTC)' : '' ?></span>
     </button>
     <div id="ai-result" style="display:none;margin-top:16px">
-      <div class="embed-label">Generated HTML</div>
+      <div class="embed-label">Generated HTML <span id="ai-charged" style="color:rgba(250,199,117,0.7);font-size:11px"></span></div>
       <pre class="embed-box" id="ai-html-display" style="max-height:150px;overflow:auto"></pre>
       <button type="button" class="btn-ghost-sm" onclick="regenerateAi()" style="margin-top:8px">↻ Regenerate</button>
     </div>
-  </div>
+    <?php endif; ?>
 
   <div style="margin-top:8px;display:flex;gap:12px">
     <button type="submit" class="btn-submit">Submit for Review →</button>
@@ -281,10 +297,14 @@ async function generateAiBanner() {
     if (data.error) {
       alert('Error: ' + data.error);
     } else {
-      document.getElementById('ai-html-display').textContent = data.html;
-      document.getElementById('ai_html_input').value = data.html;
+      const cleanHtml = data.html.replace(/```html\s*|\s*```/g, '').trim();
+      document.getElementById('ai-html-display').textContent = cleanHtml;
+      document.getElementById('ai_html_input').value = cleanHtml;
       document.getElementById('ai-result').style.display = 'block';
-      setPreviewHtml(data.html);
+      setPreviewHtml(cleanHtml);
+      if (data.charged) {
+        document.getElementById('ai-charged').textContent = '− ' + data.charged + ' charged';
+      }
     }
   } catch(e) {
     alert('Generation failed. Please try again.');

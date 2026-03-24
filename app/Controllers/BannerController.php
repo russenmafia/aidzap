@@ -163,16 +163,75 @@ class BannerController
             echo json_encode(['error' => 'Prompt too short']); return;
         }
 
+        $db = Database::getInstance();
+
+        // AI Banner Einstellungen laden
+        $settings = $db->query('
+            SELECT ai_banner_enabled, ai_banner_price FROM referral_settings WHERE id = 1 LIMIT 1
+        ')->fetch();
+
+        // Feature deaktiviert?
+        if (!$settings || !$settings['ai_banner_enabled']) {
+            echo json_encode(['error' => 'AI banner generation is currently disabled.']); return;
+        }
+
+        $price = (float)($settings['ai_banner_price'] ?? 0);
+
+        // Balance prüfen falls Preis > 0
+        if ($price > 0) {
+            $stmt = $db->prepare('
+                SELECT COALESCE(SUM(amount),0) FROM balances WHERE user_id = ? AND currency = "BTC"
+            ');
+            $stmt->execute([Auth::id()]);
+            $balance = (float)$stmt->fetchColumn();
+
+            if ($balance < $price) {
+                echo json_encode([
+                    'error'   => 'Insufficient balance. AI generation costs ' . number_format($price, 8) . ' BTC per banner.',
+                    'price'   => $price,
+                    'balance' => $balance,
+                ]); return;
+            }
+
+            // Balance abbuchen
+            $updated = $db->prepare('
+                UPDATE balances SET amount = amount - ?
+                WHERE user_id = ? AND currency = "BTC" AND amount >= ?
+            ');
+            $updated->execute([$price, Auth::id(), $price]);
+
+            if ($updated->rowCount() === 0) {
+                echo json_encode(['error' => 'Insufficient balance.']); return;
+            }
+
+            // Buchung protokollieren
+            $db->prepare('
+                INSERT INTO payments (uuid, user_id, type, currency, amount, status, provider, created_at)
+                VALUES (?,?,"fee","BTC",?,"completed","ai_banner", NOW())
+            ')->execute([bin2hex(random_bytes(16)), Auth::id(), $price]);
+        }
+
         [$w, $h] = explode('x', $size . 'x0');
 
         // Claude API aufrufen
         $response = $this->callClaudeApi($prompt, (int)$w, (int)$h);
 
         if (isset($response['error'])) {
+            // Bei Fehler: Betrag zurückbuchen
+            if ($price > 0) {
+                $db->prepare('
+                    INSERT INTO balances (user_id, currency, amount)
+                    VALUES (?,?,?)
+                    ON DUPLICATE KEY UPDATE amount = amount + VALUES(amount)
+                ')->execute([Auth::id(), 'BTC', $price]);
+            }
             echo json_encode(['error' => $response['error']]); return;
         }
 
-        echo json_encode(['html' => $response['html']]);
+        echo json_encode([
+            'html'    => $response['html'],
+            'charged' => $price > 0 ? number_format($price, 8) . ' BTC' : null,
+        ]);
     }
 
     // ── Banner löschen ────────────────────────────────────────────────────

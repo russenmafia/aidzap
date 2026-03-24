@@ -1,112 +1,169 @@
 <?php $active = 'referrals'; ?>
 
 <div class="page-header">
-  <h1 class="page-title">Referrals</h1>
+  <h1 class="page-title">Referral System</h1>
 </div>
+
+<?php if (isset($_GET['saved'])): ?>
+<div class="flash flash-success">Settings saved.</div>
+<?php endif; ?>
+
+<?php
+$db       = \Core\Database::getInstance();
+$settings = $db->query('SELECT * FROM referral_settings WHERE id = 1 LIMIT 1')->fetch();
+
+// Gesamtstatistik
+$totalReferrals   = (int)$db->query('SELECT COUNT(*) FROM referrals')->fetchColumn();
+$totalCommissions = (float)$db->query('SELECT COALESCE(SUM(commission),0) FROM referral_earnings')->fetchColumn();
+$totalUsers       = (int)$db->query('SELECT COUNT(*) FROM users WHERE referred_by IS NOT NULL')->fetchColumn();
+?>
 
 <!-- Stats -->
-<div class="metrics" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px">
+<div class="admin-metrics" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px">
   <div class="metric">
     <div class="metric-label">Total referrals</div>
-    <div class="metric-val"><?= (int)$stats['counts']['total'] ?></div>
-    <div class="metric-sub">all levels</div>
+    <div class="metric-val"><?= number_format($totalReferrals) ?></div>
+    <div class="metric-sub">across all levels</div>
   </div>
   <div class="metric">
-    <div class="metric-label">Direct (L1)</div>
-    <div class="metric-val"><?= (int)$stats['counts']['level1'] ?></div>
-    <div class="metric-sub"><?= number_format((float)$settings['level1_pct'], 1) ?>% commission</div>
+    <div class="metric-label">Users referred</div>
+    <div class="metric-val"><?= number_format($totalUsers) ?></div>
+    <div class="metric-sub">via referral link</div>
   </div>
   <div class="metric">
-    <div class="metric-label">Total earned</div>
-    <div class="metric-val green"><?= number_format((float)$stats['earnings']['total'], 8) ?></div>
-    <div class="metric-sub">BTC commissions</div>
-  </div>
-  <div class="metric">
-    <div class="metric-label">From earnings</div>
-    <div class="metric-val"><?= number_format((float)$stats['earnings']['from_earnings'], 8) ?></div>
-    <div class="metric-sub">publisher referrals</div>
+    <div class="metric-label">Total commissions</div>
+    <div class="metric-val green"><?= number_format($totalCommissions, 8) ?></div>
+    <div class="metric-sub">BTC paid out</div>
   </div>
 </div>
 
-<!-- Ref Link -->
-<div class="unit-card" style="margin-bottom:20px">
-  <div class="unit-header"><div class="dt-name">Your Referral Link</div></div>
+<!-- Settings Form -->
+<div class="admin-section">
+  <div class="section-bar" style="padding:16px 20px"><h2 class="section-title">Configuration</h2></div>
   <div style="padding:20px">
-    <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px">
-      <div class="embed-box" style="flex:1;font-size:13px;color:#fff"><?= htmlspecialchars($refUrl) ?></div>
-      <button class="copy-btn" onclick="navigator.clipboard.writeText('<?= htmlspecialchars($refUrl) ?>').then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',2000)})">Copy</button>
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <div style="font-size:12px;color:rgba(255,255,255,0.3)">Commission structure:</div>
-      <span class="badge badge-green">L1: <?= htmlspecialchars($settings['level1_pct']) ?>%</span>
-      <span class="badge badge-gray">L2: <?= htmlspecialchars($settings['level2_pct']) ?>%</span>
-      <span class="badge badge-gray">L3: <?= htmlspecialchars($settings['level3_pct']) ?>%</span>
-    </div>
+    <form method="POST" action="/admin/referrals/save">
+
+      <!-- Enable/Disable -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;padding:16px;background:#080c10;border-radius:10px;border:0.5px solid rgba(255,255,255,0.08)">
+        <label class="checkbox-label" style="font-size:14px;color:#fff">
+          <input type="checkbox" name="enabled" value="1" <?= $settings['enabled'] ? 'checked' : '' ?> style="accent-color:#3ecf8e;width:16px;height:16px">
+          <span>Referral system enabled</span>
+        </label>
+      </div>
+
+      <!-- Commission Rates -->
+      <div style="margin-bottom:24px">
+        <div style="font-size:13px;font-weight:500;color:rgba(255,255,255,0.5);margin-bottom:16px;letter-spacing:.06em;text-transform:uppercase">Commission Rates</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+          <?php foreach ([
+            ['level1_pct', 'Level 1 (direct)', 'Direct referrals'],
+            ['level2_pct', 'Level 2',           'Referrals of referrals'],
+            ['level3_pct', 'Level 3',           'Third level'],
+          ] as [$field, $label, $desc]): ?>
+          <div class="field">
+            <label><?= $label ?> (%)</label>
+            <input type="number" name="<?= $field ?>" step="0.01" min="0" max="50"
+                   value="<?= htmlspecialchars($settings[$field]) ?>"
+                   oninput="updatePreview()">
+            <span class="field-hint"><?= $desc ?></span>
+          </div>
+          <?php endforeach; ?>
+        </div>
+
+        <!-- Live Preview -->
+        <div style="background:#080c10;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;padding:16px;margin-top:16px">
+          <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:10px">Example: Publisher earns 0.001 BTC</div>
+          <div style="display:flex;gap:24px;font-family:'DM Mono',monospace;font-size:12px">
+            <div>Level 1: <span id="prev1" style="color:#3ecf8e"></span> BTC</div>
+            <div>Level 2: <span id="prev2" style="color:#3ecf8e"></span> BTC</div>
+            <div>Level 3: <span id="prev3" style="color:#3ecf8e"></span> BTC</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Commission Types -->
+      <div style="margin-bottom:24px">
+        <div style="font-size:13px;font-weight:500;color:rgba(255,255,255,0.5);margin-bottom:16px;letter-spacing:.06em;text-transform:uppercase">Apply commissions on</div>
+        <div style="display:flex;gap:20px">
+          <label class="checkbox-label">
+            <input type="checkbox" name="on_earnings" value="1" <?= $settings['on_earnings'] ? 'checked' : '' ?> style="accent-color:#3ecf8e">
+            <span>Publisher earnings</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" name="on_spend" value="1" <?= $settings['on_spend'] ? 'checked' : '' ?> style="accent-color:#3ecf8e">
+            <span>Advertiser spend</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Signup Bonus -->
+      <div style="margin-bottom:24px">
+        <div style="font-size:13px;font-weight:500;color:rgba(255,255,255,0.5);margin-bottom:16px;letter-spacing:.06em;text-transform:uppercase">Signup Bonus</div>
+        <div class="field" style="max-width:200px">
+          <label>Bonus per new user (BTC)</label>
+          <input type="number" name="signup_bonus" step="0.00000001" min="0"
+                 value="<?= htmlspecialchars($settings['signup_bonus']) ?>"
+                 placeholder="0.00000000">
+          <span class="field-hint">0 = disabled</span>
+        </div>
+      </div>
+
+      <!-- AI Banner Settings -->
+      <div style="margin-bottom:24px;padding-top:24px;border-top:0.5px solid rgba(255,255,255,0.06)">
+        <div style="font-size:13px;font-weight:500;color:rgba(255,255,255,0.5);margin-bottom:16px;letter-spacing:.06em;text-transform:uppercase">AI Banner Generator</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:14px;background:#080c10;border-radius:10px;border:0.5px solid rgba(255,255,255,0.08)">
+          <label class="checkbox-label" style="font-size:14px;color:#fff">
+            <input type="checkbox" name="ai_banner_enabled" value="1"
+                   <?= ($settings['ai_banner_enabled'] ?? 1) ? 'checked' : '' ?>
+                   style="accent-color:#3ecf8e;width:16px;height:16px">
+            <span>AI banner generation enabled</span>
+          </label>
+        </div>
+        <div class="form-grid" style="max-width:400px">
+          <div class="field">
+            <label>Price per generation (BTC)</label>
+            <input type="number" name="ai_banner_price" step="0.00000001" min="0"
+                   value="<?= htmlspecialchars(number_format((float)($settings['ai_banner_price'] ?? 0.000001), 8, '.', '')) ?>"
+                   placeholder="0.00000100">
+            <span class="field-hint">0 = free. Recommended: 0.00000100 BTC (~$0.01)</span>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-approve">Save Settings →</button>
+    </form>
   </div>
 </div>
 
-<!-- Social Share -->
-<div class="unit-card" style="margin-bottom:20px">
-  <div class="unit-header"><div class="dt-name">Share on Social Media</div></div>
-  <div style="padding:20px">
-
-    <!-- Language Tabs -->
-    <div class="cron-tab-group" style="margin-bottom:16px">
-      <button class="cron-tab active" onclick="setLang('en',this)">English</button>
-      <button class="cron-tab" onclick="setLang('de',this)">Deutsch</button>
-    </div>
-
-    <!-- Message Box -->
-    <textarea id="share-text" rows="5"
-              style="width:100%;background:#080c10;border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:12px;font-family:'DM Mono',monospace;font-size:12px;color:#fff;line-height:1.7;resize:vertical"
-    ><?= htmlspecialchars($shareTexts['en']) ?></textarea>
-
-    <!-- Share Buttons -->
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
-
-      <button class="share-btn share-facebook" onclick="shareOn('facebook')">
-        <span class="share-icon">f</span> Facebook
-      </button>
-      <button class="share-btn share-twitter" onclick="shareOn('twitter')">
-        <span class="share-icon">𝕏</span> Twitter/X
-      </button>
-      <button class="share-btn share-telegram" onclick="shareOn('telegram')">
-        <span class="share-icon">✈</span> Telegram
-      </button>
-      <button class="share-btn share-whatsapp" onclick="shareOn('whatsapp')">
-        <span class="share-icon">●</span> WhatsApp
-      </button>
-      <button class="share-btn share-reddit" onclick="shareOn('reddit')">
-        <span class="share-icon">●</span> Reddit
-      </button>
-      <button class="share-btn share-linkedin" onclick="shareOn('linkedin')">
-        <span class="share-icon">in</span> LinkedIn
-      </button>
-
-      <button class="copy-btn" style="margin-left:auto" onclick="copyShareText()">Copy text</button>
-    </div>
-
-    <p style="font-size:11px;color:rgba(255,255,255,0.2);margin-top:12px">
-      You can edit the text above before sharing. Your referral link is automatically included.
-    </p>
-  </div>
-</div>
-
-<!-- Referral List -->
-<div class="unit-card">
-  <div class="unit-header"><div class="dt-name">Your Referrals</div></div>
-  <?php if (empty($stats['referrals'])): ?>
-  <div style="padding:20px"><p style="font-size:13px;color:rgba(255,255,255,0.3)">No referrals yet. Share your link to start earning commissions.</p></div>
+<!-- Top Referrers -->
+<div class="admin-section">
+  <div class="section-bar" style="padding:16px 20px"><h2 class="section-title">Top Referrers</h2></div>
+  <?php
+  $topReferrers = $db->query('
+    SELECT u.username,
+           COUNT(r.id) AS referral_count,
+           COALESCE(SUM(re.commission),0) AS total_commission
+    FROM users u
+    LEFT JOIN referrals r ON r.referrer_id = u.id
+    LEFT JOIN referral_earnings re ON re.user_id = u.id
+    GROUP BY u.id
+    HAVING referral_count > 0
+    ORDER BY total_commission DESC
+    LIMIT 10
+  ')->fetchAll();
+  ?>
+  <?php if (empty($topReferrers)): ?>
+  <div style="padding:20px"><p style="color:rgba(255,255,255,0.3);font-size:13px">No referrals yet.</p></div>
   <?php else: ?>
-  <div class="data-table" style="border:none;border-radius:0">
-    <div class="dt-header" style="grid-template-columns:1fr 60px 120px">
-      <div>User</div><div>Level</div><div>Joined</div>
+  <div class="data-table">
+    <div class="dt-header" style="grid-template-columns:1fr 100px 150px">
+      <div>User</div><div>Referrals</div><div>Commission (BTC)</div>
     </div>
-    <?php foreach ($stats['referrals'] as $r): ?>
-    <div class="dt-row" style="grid-template-columns:1fr 60px 120px">
+    <?php foreach ($topReferrers as $r): ?>
+    <div class="dt-row" style="grid-template-columns:1fr 100px 150px">
       <div class="dt-name"><?= htmlspecialchars($r['username']) ?></div>
-      <div><span class="badge badge-gray">L<?= (int)$r['level'] ?></span></div>
-      <div class="dt-muted" style="font-size:11px"><?= date('d.m.Y', strtotime($r['user_joined'])) ?></div>
+      <div class="dt-muted"><?= (int)$r['referral_count'] ?></div>
+      <div class="dt-green"><?= number_format((float)$r['total_commission'], 8) ?></div>
     </div>
     <?php endforeach; ?>
   </div>
@@ -114,39 +171,12 @@
 </div>
 
 <script>
-const shareTexts = <?= json_encode($shareTexts) ?>;
-const refUrl     = '<?= htmlspecialchars($refUrl) ?>';
-
-function setLang(lang, btn) {
-  document.querySelectorAll('.cron-tab').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('share-text').value = shareTexts[lang] || shareTexts['en'];
-}
-
-function getShareText() {
-  return document.getElementById('share-text').value;
-}
-
-function copyShareText() {
-  navigator.clipboard.writeText(getShareText()).then(() => {
-    const btn = event.target;
-    btn.textContent = 'Copied!';
-    setTimeout(() => btn.textContent = 'Copy text', 2000);
+function updatePreview() {
+  const base = 0.001;
+  ['1','2','3'].forEach(l => {
+    const pct = parseFloat(document.querySelector('[name="level'+l+'_pct"]').value) || 0;
+    document.getElementById('prev'+l).textContent = (base * pct / 100).toFixed(8);
   });
 }
-
-const shareUrls = {
-  facebook: text => `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(refUrl)}&quote=${encodeURIComponent(text)}`,
-  twitter:  text => `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`,
-  telegram: text => `https://t.me/share/url?url=${encodeURIComponent(refUrl)}&text=${encodeURIComponent(text)}`,
-  whatsapp: text => `https://wa.me/?text=${encodeURIComponent(text)}`,
-  reddit:   text => `https://www.reddit.com/submit?url=${encodeURIComponent(refUrl)}&title=${encodeURIComponent(text.split('\n')[0])}`,
-  linkedin: text => `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(refUrl)}`,
-};
-
-function shareOn(platform) {
-  const text = getShareText();
-  const url  = shareUrls[platform](text);
-  window.open(url, '_blank', 'width=600,height=500,noopener');
-}
+updatePreview();
 </script>
