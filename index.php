@@ -6,6 +6,8 @@ define('APP_PATH',    BASE_PATH . '/app');
 define('CONFIG_PATH', BASE_PATH . '/config');
 define('STORAGE_PATH',BASE_PATH . '/storage');
 
+require_once APP_PATH . "/Core/Lang.php";
+require_once APP_PATH . "/Core/helpers.php";
 // Autoloader
 spl_autoload_register(function (string $class): void {
     $file = APP_PATH . '/' . str_replace('\\', '/', $class) . '.php';
@@ -43,6 +45,7 @@ session_start([
     'cookie_samesite' => 'Strict',
     'gc_maxlifetime'  => (int)($_ENV['SESSION_LIFETIME'] ?? 7200),
 ]);
+\Core\Lang::init();
 
 // Router
 require_once APP_PATH . '/Core/Router.php';

@@ -6,6 +6,8 @@ define('APP_PATH',    BASE_PATH . '/app');
 define('CONFIG_PATH', BASE_PATH . '/config');
 define('STORAGE_PATH',BASE_PATH . '/storage');
 
+require_once APP_PATH . "/Core/Lang.php";
+require_once APP_PATH . "/Core/helpers.php";
 spl_autoload_register(function (string $class): void {
     $file = APP_PATH . '/' . str_replace('\\', '/', $class) . '.php';
     if (file_exists($file)) require_once $file;
