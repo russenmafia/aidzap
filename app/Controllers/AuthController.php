@@ -12,11 +12,17 @@ class AuthController
     public function registerForm(): void
     {
         if (Auth::check()) { header('Location: /dashboard'); exit; }
+
+        // Ref-Code aus URL, Session oder Cookie
+        $refCode = $_GET['ref'] ?? $_SESSION['ref_code'] ?? $_COOKIE['ref_code'] ?? null;
+        if ($refCode) $_SESSION['ref_code'] = $refCode;
+
         View::render('auth/register', [
             'title'      => 'Create account',
             'csrf_token' => Auth::csrfToken(),
             'errors'     => [],
             'old'        => [],
+            'ref_code'   => $refCode,
         ], 'auth');
     }
 
