@@ -267,8 +267,6 @@ class AdminController
         }
         header('Location: /admin/fraud?done=1'); exit;
     }
-<<<<<<< HEAD
-=======
 
     // ── Legal Pages ──────────────────────────────────────────────────────────
     public function legalPages(): void
@@ -441,7 +439,6 @@ class AdminController
         header('Location: /admin/faq?deleted=1');
         exit;
     }
->>>>>>> e2b76bc (legal)
 
     // ── Cron Overview ────────────────────────────────────────────────────────
     public function crons(): void
