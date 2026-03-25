@@ -99,3 +99,13 @@ $router->post('/admin/referrals/save', [\Controllers\AdminReferralController::cl
 $router->get('/advertiser/campaigns/:uuid/edit',  [\Controllers\CampaignController::class, 'editForm']);
 $router->post('/advertiser/campaigns/:uuid/edit', [\Controllers\CampaignController::class, 'edit']);
 $router->post('/advertiser/campaigns/:uuid/toggle', [\Controllers\CampaignController::class, 'toggleStatus']);
+
+// SEO
+$router->get('/sitemap.xml', function() {
+    header('Content-Type: application/xml; charset=utf-8');
+    readfile(BASE_PATH . '/public/sitemap.xml');
+});
+$router->get('/robots.txt', function() {
+    header('Content-Type: text/plain');
+    readfile(BASE_PATH . '/public/robots.txt');
+});

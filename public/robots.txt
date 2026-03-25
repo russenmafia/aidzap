@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /dashboard
+Disallow: /publisher/
+Disallow: /advertiser/
+Disallow: /account/
+Disallow: /payment/
+Disallow: /wallet/
+Disallow: /ad/click
+Disallow: /referrals
+
+Sitemap: https://aidzap.com/sitemap.xml

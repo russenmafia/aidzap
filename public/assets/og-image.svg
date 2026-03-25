@@ -1,0 +1,15 @@
+<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#0d1117"/>
+  <rect x="0" y="0" width="1200" height="630" fill="url(#grad)"/>
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0d1117"/>
+      <stop offset="100%" style="stop-color:#0a1f14"/>
+    </linearGradient>
+  </defs>
+  <text x="600" y="240" font-family="Arial,sans-serif" font-size="72" font-weight="700" fill="white" text-anchor="middle">AID<tspan fill="#3ecf8e">ZAP</tspan></text>
+  <text x="600" y="320" font-family="Arial,sans-serif" font-size="28" fill="rgba(255,255,255,0.6)" text-anchor="middle">Privacy-First Crypto Advertising</text>
+  <text x="600" y="390" font-family="Arial,sans-serif" font-size="22" fill="rgba(255,255,255,0.35)" text-anchor="middle">No KYC · No Cookies · No Tracking · Earn BTC</text>
+  <rect x="460" y="450" width="280" height="56" rx="28" fill="#3ecf8e"/>
+  <text x="600" y="484" font-family="Arial,sans-serif" font-size="20" font-weight="600" fill="#0d1117" text-anchor="middle">Start for free →</text>
+</svg>
