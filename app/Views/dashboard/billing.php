@@ -1,7 +1,7 @@
 <?php $active = 'billing'; ?>
 
 <div class="page-header">
-  <h1 class="page-title">Billing</h1>
+  <h1 class="page-title"><?= __('billing.title') ?></h1>
 </div>
 
 <?php if (isset($_GET['insufficient'])): ?>
@@ -15,7 +15,7 @@
 <div class="flash flash-success">Payment received! Your balance will be updated after confirmation.</div>
 <?php endif; ?>
 <?php if (isset($_GET['withdrawn'])): ?>
-<div class="flash flash-success">Withdrawal request submitted. Processing within 24 hours.</div>
+<div class="flash flash-success"><?= __('withdraw.flash_done') ?></div>
 <?php endif; ?>
 <?php if (isset($_GET['error'])): ?>
 <div class="flash flash-error"><?= htmlspecialchars($_GET['error']) ?></div>
@@ -28,7 +28,7 @@
   <div class="form-section">
     <div class="form-section-title"><span class="form-step">&#9672;</span> Your Balances</div>
     <?php if (empty($balances)): ?>
-    <p style="color:rgba(255,255,255,0.35);font-size:13px">No balance yet. Make a deposit to start advertising.</p>
+    <p style="color:rgba(255,255,255,0.35);font-size:13px"><?= __('billing.no_balance') ?></p>
     <?php else: ?>
     <div style="display:flex;gap:12px;flex-wrap:wrap">
       <?php foreach ($balances as $b): ?>
@@ -46,12 +46,12 @@
     <div class="form-section-title"><span class="form-step">1</span> Deposit</div>
     <div class="form-grid">
       <div class="field">
-        <label>Amount (USD)</label>
+        <label><?= __('billing.amount_usd') ?></label>
         <input type="number" id="dep-usd" min="1" step="1" value="50" placeholder="50">
         <span class="field-hint">Minimum $1 USD</span>
       </div>
       <div class="field">
-        <label>Pay with</label>
+        <label><?= __('billing.pay_with') ?></label>
         <select id="dep-currency">
           <?php foreach (['BTC','ETH','LTC','USDT','XMR','DOGE','BNB','SOL','TRX','MATIC'] as $c): ?>
           <option value="<?= $c ?>"><?= $c ?></option>
@@ -66,11 +66,11 @@
     <!-- Payment Details (nach API-Call) -->
     <div id="deposit-result" style="display:none;margin-top:20px">
       <div class="deposit-box">
-        <div class="deposit-label">Send exactly</div>
+        <div class="deposit-label"><?= __('billing.send_exactly') ?></div>
         <div class="deposit-amount" id="dep-amount"></div>
-        <div class="deposit-label" style="margin-top:16px">To this address</div>
+        <div class="deposit-label" style="margin-top:16px"><?= __('billing.to_address') ?></div>
         <div class="deposit-address" id="dep-address" onclick="copyAddress()"></div>
-        <button type="button" class="copy-btn" onclick="copyAddress()" style="margin-top:8px">Copy Address</button>
+        <button type="button" class="copy-btn" onclick="copyAddress()" style="margin-top:8px"><?= __('billing.copy_address') ?></button>
         <div class="deposit-note">
           &#9888; Send only the exact amount. Payment expires in 20 minutes.
           Balance updates automatically after confirmation.
@@ -86,7 +86,7 @@
       <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(\Core\Auth::csrfToken()) ?>">
       <div class="form-grid">
         <div class="field">
-          <label>Currency</label>
+          <label><?= __('common.currency') ?></label>
           <select name="currency">
             <option value="BTC">BTC</option>
             <option value="ETH">ETH</option>
@@ -94,11 +94,11 @@
           </select>
         </div>
         <div class="field">
-          <label>Amount</label>
+          <label><?= __('common.amount') ?></label>
           <input type="number" name="amount" step="0.00000001" min="0.0001" placeholder="0.00100000">
         </div>
         <div class="field full">
-          <label>Wallet Address</label>
+          <label><?= __('withdraw.wallet_address') ?></label>
           <input type="text" name="wallet_address" placeholder="Your BTC/ETH/LTC address">
           <span class="field-hint">Double-check your address. Withdrawals cannot be reversed.</span>
         </div>
@@ -113,11 +113,11 @@
   <div class="form-section">
     <div class="form-section-title"><span class="form-step">3</span> Transaction History</div>
     <?php if (empty($payments) && empty($invoices)): ?>
-    <p style="color:rgba(255,255,255,0.35);font-size:13px">No transactions yet.</p>
+    <p style="color:rgba(255,255,255,0.35);font-size:13px"><?= __('earnings.no_tx') ?></p>
     <?php else: ?>
     <div class="data-table">
       <div class="dt-header" style="grid-template-columns:120px 80px 100px 120px 90px">
-        <div>Date</div><div>Type</div><div>Currency</div><div>Amount</div><div>Status</div>
+        <div>Date</div><div>Type</div><div><?= __('common.currency') ?></div><div><?= __('common.amount') ?></div><div>Status</div>
       </div>
       <?php foreach ($payments as $p): ?>
       <div class="dt-row" style="grid-template-columns:120px 80px 100px 120px 90px">
@@ -137,11 +137,11 @@
 <!-- Summary Sidebar -->
 <div class="wizard-side">
   <div class="summary-card">
-    <div class="summary-title">Quick Info</div>
-    <div class="summary-row"><span class="summary-label">Min. deposit</span><span class="summary-val">$1 USD</span></div>
-    <div class="summary-row"><span class="summary-label">Min. withdrawal</span><span class="summary-val">0.0001 BTC</span></div>
-    <div class="summary-row"><span class="summary-label">Publisher share</span><span class="summary-val">80%</span></div>
-    <div class="summary-row"><span class="summary-label">Platform fee</span><span class="summary-val">20%</span></div>
+    <div class="summary-title"><?= __('billing.quick_info') ?></div>
+    <div class="summary-row"><span class="summary-label"><?= __('billing.min_deposit') ?></span><span class="summary-val">$1 USD</span></div>
+    <div class="summary-row"><span class="summary-label"><?= __('billing.min_withdraw') ?></span><span class="summary-val">0.0001 BTC</span></div>
+    <div class="summary-row"><span class="summary-label"><?= __('billing.publisher_share') ?></span><span class="summary-val">80%</span></div>
+    <div class="summary-row"><span class="summary-label"><?= __('billing.platform_fee') ?></span><span class="summary-val">20%</span></div>
     <div class="summary-divider"></div>
     <div class="summary-note">
       Deposits are credited after 1 network confirmation.

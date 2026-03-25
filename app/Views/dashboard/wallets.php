@@ -1,12 +1,12 @@
 <?php $active = 'wallets'; ?>
 
 <div class="page-header">
-  <h1 class="page-title">Wallets</h1>
+  <h1 class="page-title"><?= __('wallets.title') ?></h1>
 </div>
 
-<?php if (isset($_GET['added'])): ?><div class="flash flash-success">Wallet added successfully.</div><?php endif; ?>
-<?php if (isset($_GET['deleted'])): ?><div class="flash flash-success">Wallet removed.</div><?php endif; ?>
-<?php if (isset($_GET['default'])): ?><div class="flash flash-success">Default wallet updated.</div><?php endif; ?>
+<?php if (isset($_GET['added'])): ?><div class="flash flash-success"><?= __('wallets.flash_added') ?></div><?php endif; ?>
+<?php if (isset($_GET['deleted'])): ?><div class="flash flash-success"><?= __('wallets.flash_deleted') ?></div><?php endif; ?>
+<?php if (isset($_GET['default'])): ?><div class="flash flash-success"><?= __('wallets.flash_default') ?></div><?php endif; ?>
 <?php if (!empty($errors)): ?>
 <div class="flash flash-error"><?php foreach ($errors as $e): ?><p><?= htmlspecialchars($e) ?></p><?php endforeach; ?></div>
 <?php endif; ?>
@@ -25,7 +25,7 @@
       <span class="badge badge-green">Connected</span>
     </div>
     <p style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px">
-      This wallet is used for login. Manage it in <a href="/account/settings" style="color:#3ecf8e">Settings</a>.
+      This wallet is used for login. Manage it in <a href="/account/settings" style="color:#3ecf8e"><?= __('settings.title') ?></a>.
     </p>
   </div>
   <?php endif; ?>
@@ -35,11 +35,11 @@
     <div class="form-section-title"><span class="form-step">1</span> Payout Wallets</div>
 
     <?php if (empty($wallets)): ?>
-    <p style="color:rgba(255,255,255,0.35);font-size:13px;margin-bottom:16px">No payout wallets yet. Add one to receive earnings.</p>
+    <p style="color:rgba(255,255,255,0.35);font-size:13px;margin-bottom:16px"><?= __('wallets.no_wallets') ?></p>
     <?php else: ?>
     <div class="data-table" style="margin-bottom:20px">
       <div class="dt-header" style="grid-template-columns:80px 1fr 100px 80px 80px">
-        <div>Currency</div><div>Address</div><div>Label</div><div>Default</div><div>Action</div>
+        <div><?= __('common.currency') ?></div><div>Address</div><div>Label</div><div>Default</div><div>Action</div>
       </div>
       <?php foreach ($wallets as $w): ?>
       <div class="dt-row" style="grid-template-columns:80px 1fr 100px 80px 80px">
@@ -71,12 +71,12 @@
 
     <!-- Add Wallet Form -->
     <div style="border-top:0.5px solid rgba(255,255,255,0.06);padding-top:20px">
-      <div style="font-size:13px;font-weight:500;color:rgba(255,255,255,0.5);margin-bottom:16px">Add payout wallet</div>
+      <div style="font-size:13px;font-weight:500;color:rgba(255,255,255,0.5);margin-bottom:16px"><?= __('wallets.add_title') ?></div>
       <form method="POST" action="/account/wallets/add">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
         <div class="form-grid">
           <div class="field">
-            <label>Currency</label>
+            <label><?= __('common.currency') ?></label>
             <select name="currency">
               <?php foreach (['BTC','ETH','LTC','USDT','XMR','DOGE','BNB','SOL','TRX','MATIC'] as $c): ?>
               <option value="<?= $c ?>"><?= $c ?></option>
@@ -88,18 +88,18 @@
             <input type="text" name="label" placeholder="e.g. My BTC wallet">
           </div>
           <div class="field full">
-            <label>Wallet Address</label>
+            <label><?= __('withdraw.wallet_address') ?></label>
             <input type="text" name="address" placeholder="bc1q... / 0x... / L..." required>
             <span class="field-hint">Double-check your address. Withdrawals cannot be reversed.</span>
           </div>
           <div class="field full">
             <label class="checkbox-label">
               <input type="checkbox" name="is_default" value="1">
-              <span>Set as default payout wallet for this currency</span>
+              <span><?= __('wallets.set_default_label') ?></span>
             </label>
           </div>
         </div>
-        <button type="submit" class="btn-submit" style="margin-top:8px">Add Wallet →</button>
+        <button type="submit" class="btn-submit" style="margin-top:8px"><?= __('wallets.add_btn') ?></button>
       </form>
     </div>
   </div>
@@ -109,7 +109,7 @@
 <!-- Sidebar -->
 <div class="wizard-side">
   <div class="summary-card">
-    <div class="summary-title">Supported currencies</div>
+    <div class="summary-title"><?= __('wallets.supported') ?></div>
     <?php foreach (['BTC','ETH','LTC','USDT','XMR','DOGE','BNB','SOL','TRX','MATIC'] as $c): ?>
     <div class="summary-row"><span class="summary-label"><?= $c ?></span><span class="summary-val badge badge-gray"><?= $c ?></span></div>
     <?php endforeach; ?>

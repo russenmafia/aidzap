@@ -142,7 +142,6 @@ class CampaignController
             mt_rand(0,0x0fff)|0x4000,mt_rand(0,0x3fff)|0x8000,
             mt_rand(0,0xffff),mt_rand(0,0xffff),mt_rand(0,0xffff));
     }
-}
 
     // ── Edit Formular ─────────────────────────────────────────────────────
     public function editForm(string $uuid): void
@@ -269,3 +268,4 @@ class CampaignController
 
         header('Location: /advertiser/campaigns?toggled=1'); exit;
     }
+}

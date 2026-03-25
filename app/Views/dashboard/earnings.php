@@ -1,34 +1,34 @@
 <?php $active = 'earnings'; ?>
 
 <div class="page-header">
-  <h1 class="page-title">Earnings</h1>
-  <a href="/publisher/withdraw" class="btn-add">Withdraw →</a>
+  <h1 class="page-title"><?= __('earnings.title') ?></h1>
+  <a href="/publisher/withdraw" class="btn-add"><?= __('earnings.withdraw_btn') ?></a>
 </div>
 
 <!-- Metric Cards -->
 <div class="metrics" style="grid-template-columns:repeat(5,1fr);margin-bottom:28px">
   <div class="metric">
-    <div class="metric-label">Total earned</div>
+    <div class="metric-label"><?= __('earnings.total_earned') ?></div>
     <div class="metric-val green"><?= number_format((float)$totals['total_earned'], 8) ?></div>
-    <div class="metric-sub">BTC lifetime</div>
+    <div class="metric-sub"><?= __('earnings.btc_lifetime') ?></div>
   </div>
   <div class="metric">
-    <div class="metric-label">Pending payout</div>
+    <div class="metric-label"><?= __('earnings.pending_payout') ?></div>
     <div class="metric-val <?= $pending > 0 ? 'green' : '' ?>"><?= number_format($pending, 8) ?></div>
-    <div class="metric-sub">BTC awaiting</div>
+    <div class="metric-sub"><?= __('earnings.btc_awaiting') ?></div>
   </div>
   <div class="metric">
-    <div class="metric-label">Available balance</div>
+    <div class="metric-label"><?= __('earnings.available_balance') ?></div>
     <div class="metric-val"><?= number_format($balance, 8) ?></div>
-    <div class="metric-sub">BTC withdrawable</div>
+    <div class="metric-sub"><?= __('earnings.btc_withdrawable') ?></div>
   </div>
   <div class="metric">
-    <div class="metric-label">Total impressions</div>
+    <div class="metric-label"><?= __('earnings.total_impressions') ?></div>
     <div class="metric-val"><?= number_format((int)$totals['total_impressions']) ?></div>
-    <div class="metric-sub">all time</div>
+    <div class="metric-sub"><?= __('earnings.all_time') ?></div>
   </div>
   <div class="metric">
-    <div class="metric-label">Total clicks</div>
+    <div class="metric-label"><?= __('earnings.total_clicks') ?></div>
     <div class="metric-val"><?= number_format((int)$totals['total_clicks']) ?></div>
     <div class="metric-sub">
       CTR: <?= $totals['total_impressions'] > 0
@@ -41,11 +41,11 @@
 <!-- 30-Day Chart -->
 <div class="unit-card" style="margin-bottom:20px">
   <div class="unit-header">
-    <div class="dt-name">Last 30 days</div>
+    <div class="dt-name"><?= __('earnings.last_30_days') ?></div>
   </div>
   <div style="padding:20px">
     <?php if (empty($daily)): ?>
-    <p style="color:rgba(255,255,255,0.3);font-size:13px">No earnings data yet.</p>
+    <p style="color:rgba(255,255,255,0.3);font-size:13px"><?= __('earnings.no_data') ?></p>
     <?php else: ?>
     <div style="display:flex;align-items:flex-end;gap:4px;height:120px;overflow:hidden">
       <?php
@@ -74,9 +74,9 @@
 
 <!-- Per Unit -->
 <div class="unit-card" style="margin-bottom:20px">
-  <div class="unit-header"><div class="dt-name">Earnings by Ad Unit</div></div>
+  <div class="unit-header"><div class="dt-name"><?= __('earnings.by_unit') ?></div></div>
   <?php if (empty($byUnit)): ?>
-  <div style="padding:20px"><p style="color:rgba(255,255,255,0.3);font-size:13px">No ad units yet.</p></div>
+  <div style="padding:20px"><p style="color:rgba(255,255,255,0.3);font-size:13px"><?= __('earnings.no_units') ?></p></div>
   <?php else: ?>
   <div class="data-table" style="border:none;border-radius:0">
     <div class="dt-header" style="grid-template-columns:2fr 80px 80px 100px 120px 80px 90px">
@@ -106,9 +106,9 @@
 
 <!-- Transaction History -->
 <div class="unit-card">
-  <div class="unit-header"><div class="dt-name">Transaction History</div></div>
+  <div class="unit-header"><div class="dt-name"><?= __('earnings.tx_history') ?></div></div>
   <?php if (empty($transactions)): ?>
-  <div style="padding:20px"><p style="color:rgba(255,255,255,0.3);font-size:13px">No transactions yet.</p></div>
+  <div style="padding:20px"><p style="color:rgba(255,255,255,0.3);font-size:13px"><?= __('earnings.no_tx') ?></p></div>
   <?php else: ?>
   <div class="data-table" style="border:none;border-radius:0">
     <div class="dt-header" style="grid-template-columns:100px 1fr 80px 80px 120px 80px">

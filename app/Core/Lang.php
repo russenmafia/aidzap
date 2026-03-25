@@ -21,7 +21,7 @@ class Lang {
     public static function get(string $key, array $replace = []): string {
         $text = self::$strings[$key] ?? $key;
         foreach ($replace as $k => $v) {
-            $text = str_replace(':' . $k, $v, $text);
+            $text = str_replace(':' . $k, (string)$v, $text);
         }
         return $text;
     }

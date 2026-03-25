@@ -1,11 +1,11 @@
 <?php $active = 'withdraw'; ?>
 
 <div class="page-header">
-  <h1 class="page-title">Withdraw Earnings</h1>
+  <h1 class="page-title"><?= __('billing.withdraw_earnings') ?></h1>
 </div>
 
 <?php if (isset($_GET['done'])): ?>
-<div class="flash flash-success">Withdrawal request submitted. Processing within 24 hours.</div>
+<div class="flash flash-success"><?= __('withdraw.flash_done') ?></div>
 <?php endif; ?>
 <?php if (isset($_GET['error'])): ?>
 <div class="flash flash-error"><?= htmlspecialchars($_GET['error']) ?></div>
@@ -38,7 +38,7 @@
       <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(\Core\Auth::csrfToken()) ?>">
       <div class="form-grid">
         <div class="field">
-          <label>Currency</label>
+          <label><?= __('common.currency') ?></label>
           <select name="currency" id="withdraw-currency" onchange="updateWallets()">
             <?php foreach (['BTC','ETH','LTC','USDT','XMR','DOGE'] as $c): ?>
             <option value="<?= $c ?>"><?= $c ?></option>
@@ -46,16 +46,16 @@
           </select>
         </div>
         <div class="field">
-          <label>Amount</label>
+          <label><?= __('common.amount') ?></label>
           <input type="number" name="amount" step="0.00000001" min="0.0001"
                  placeholder="0.00100000" required>
           <span class="field-hint">Min: 0.0001 BTC / 0.005 ETH / 0.01 LTC</span>
         </div>
         <div class="field full">
-          <label>Wallet Address</label>
+          <label><?= __('withdraw.wallet_address') ?></label>
           <?php if (!empty($wallets)): ?>
           <select name="wallet_address" id="wallet-select">
-            <option value="">— Select saved wallet or enter manually —</option>
+            <option value=""><?= __('withdraw.select_wallet') ?></option>
             <?php foreach ($wallets as $w): ?>
             <option value="<?= htmlspecialchars($w['address']) ?>"
                     data-currency="<?= htmlspecialchars($w['currency']) ?>"
@@ -86,11 +86,11 @@
   <div class="form-section">
     <div class="form-section-title"><span class="form-step">2</span> Withdrawal History</div>
     <?php if (empty($history)): ?>
-    <p style="font-size:13px;color:rgba(255,255,255,0.35)">No withdrawals yet.</p>
+    <p style="font-size:13px;color:rgba(255,255,255,0.35)"><?= __('withdraw.no_history') ?></p>
     <?php else: ?>
     <div class="data-table">
       <div class="dt-header" style="grid-template-columns:120px 80px 120px 1fr 90px">
-        <div>Date</div><div>Currency</div><div>Amount</div><div>Address</div><div>Status</div>
+        <div>Date</div><div><?= __('common.currency') ?></div><div><?= __('common.amount') ?></div><div>Address</div><div>Status</div>
       </div>
       <?php foreach ($history as $p): ?>
       <div class="dt-row" style="grid-template-columns:120px 80px 120px 1fr 90px">
@@ -110,18 +110,18 @@
 <!-- Sidebar -->
 <div class="wizard-side">
   <div class="summary-card">
-    <div class="summary-title">Withdrawal info</div>
+    <div class="summary-title"><?= __('withdraw.info_title') ?></div>
     <div class="summary-row"><span class="summary-label">Min. BTC</span><span class="summary-val">0.0001</span></div>
     <div class="summary-row"><span class="summary-label">Min. ETH</span><span class="summary-val">0.005</span></div>
     <div class="summary-row"><span class="summary-label">Min. LTC</span><span class="summary-val">0.01</span></div>
-    <div class="summary-row"><span class="summary-label">Processing</span><span class="summary-val">24 hours</span></div>
-    <div class="summary-row"><span class="summary-label">KYC required</span><span class="summary-val" style="color:#3ecf8e">Never</span></div>
+    <div class="summary-row"><span class="summary-label"><?= __('withdraw.processing') ?></span><span class="summary-val">24 hours</span></div>
+    <div class="summary-row"><span class="summary-label"><?= __('withdraw.kyc_required') ?></span><span class="summary-val" style="color:#3ecf8e"><?= __('common.never') ?></span></div>
     <div class="summary-divider"></div>
     <div class="summary-note">
       Publisher share is 80% of gross ad revenue. Pending earnings are confirmed after 30 days.
     </div>
     <div style="margin-top:12px">
-      <a href="/account/wallets" class="btn-ghost-sm" style="display:block;text-align:center">Manage Wallets →</a>
+      <a href="/account/wallets" class="btn-ghost-sm" style="display:block;text-align:center"><?= __('withdraw.manage_wallets') ?></a>
     </div>
   </div>
 </div>

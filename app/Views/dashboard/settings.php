@@ -1,7 +1,7 @@
 <?php $active = 'settings'; ?>
 
 <div class="page-header">
-  <h1 class="page-title">Settings</h1>
+  <h1 class="page-title"><?= __('settings.title') ?></h1>
 </div>
 
 <?php
@@ -31,7 +31,7 @@ if (!empty($success) && isset($successMessages[$success])): ?>
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
     <div class="form-grid">
       <div class="field full">
-        <label>Username</label>
+        <label><?= __('settings.username') ?></label>
         <input type="text" name="username" value="<?= htmlspecialchars($user['username']) ?>"
                minlength="3" maxlength="32" required>
         <span class="field-hint">3–32 characters. Letters, numbers, underscores only.</span>
@@ -83,13 +83,13 @@ if (!empty($success) && isset($successMessages[$success])): ?>
   </div>
   <form method="POST" action="/account/settings/wallet/unlink">
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
-    <button type="submit" class="btn-reject" onclick="return confirm('Disconnect wallet login?')">Disconnect Wallet</button>
+    <button type="submit" class="btn-reject" onclick="return confirm('Disconnect wallet login?')"><?= __('settings.disconnect_wallet') ?></button>
   </form>
   <?php else: ?>
   <p style="font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:16px">No wallet connected. Connect MetaMask to enable wallet login.</p>
   <button type="button" class="btn-wallet-login" style="max-width:300px" onclick="linkWallet()">
     <span style="color:#7f77dd;font-size:16px">&#9830;</span>
-    <span id="link-btn-text" style="font-size:13px;font-weight:500;color:#fff">Connect Wallet</span>
+    <span id="link-btn-text" style="font-size:13px;font-weight:500;color:#fff"><?= __('settings.connect_wallet') ?></span>
   </button>
   <?php endif; ?>
 </div>
@@ -105,11 +105,11 @@ if (!empty($success) && isset($successMessages[$success])): ?>
   <div style="display:flex;gap:8px">
     <form method="POST" action="/account/settings/token/generate" style="display:inline">
       <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
-      <button class="action-btn" onclick="return confirm('Regenerate token? Old token will stop working.')">Regenerate</button>
+      <button class="action-btn" onclick="return confirm('Regenerate token? Old token will stop working.')"><?= __('common.regenerate') ?></button>
     </form>
     <form method="POST" action="/account/settings/token/revoke" style="display:inline">
       <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
-      <button class="action-btn" style="color:#e05454;border-color:rgba(224,84,84,0.25)" onclick="return confirm('Revoke API token?')">Revoke</button>
+      <button class="action-btn" style="color:#e05454;border-color:rgba(224,84,84,0.25)" onclick="return confirm('Revoke API token?')"><?= __('common.revoke') ?></button>
     </form>
   </div>
   <?php else: ?>
@@ -134,7 +134,7 @@ if (!empty($success) && isset($successMessages[$success])): ?>
       <label>Type DELETE to confirm</label>
       <input type="text" name="confirm" placeholder="DELETE" pattern="DELETE" required>
     </div>
-    <button type="submit" class="btn-reject">Delete Account</button>
+    <button type="submit" class="btn-reject"><?= __('settings.delete_account') ?></button>
   </form>
 </div>
 
