@@ -257,7 +257,6 @@ return [
     'status.paused'               => 'Paused',
     'status.rejected'             => 'Rejected',
     'status.completed'            => 'Done',
-];
 
 // Earnings
     'earnings.title' => 'Earnings',
