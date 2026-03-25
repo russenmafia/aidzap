@@ -3,6 +3,11 @@ declare(strict_types=1);
 
 namespace Services;
 
+if (file_exists(dirname(__DIR__, 2) . '/vendor/autoload.php')) {
+    require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
+    require_once dirname(__DIR__, 2) . '/vendor/kornrunner/keccak/src/Keccak.php';
+}
+
 use Core\Database;
 
 class WalletAuthService
@@ -45,29 +50,40 @@ class WalletAuthService
     // ── Signatur verifizieren ─────────────────────────────────────────────
     public function verifySignature(string $message, string $signature, string $address): bool
     {
-        // Ethereum Personal Sign Prefix
-        $prefix  = "\x19Ethereum Signed Message:\n" . strlen($message);
-        $msgHash = $this->keccak256($prefix . $message);
+        try {
+            // Ethereum Personal Sign Prefix – normalize first, then calculate length
+            $message = str_replace("\r\n", "\n", $message);
+            $prefix  = "\x19Ethereum Signed Message:\n" . mb_strlen($message, "8bit");
+            $msgHashHex = $this->keccak256($prefix . $message);
 
-        // Signatur dekodieren
-        $sig = hex2bin(ltrim($signature, '0x'));
-        if (strlen($sig) !== 65) return false;
+            // Signatur dekodieren
+            $sig = hex2bin(substr(strpos($signature, '0x') === 0 ? substr($signature, 2) : $signature, 0));
+            if (strlen($sig) !== 65) return false;
 
-        $r = substr($sig, 0, 32);
-        $s = substr($sig, 32, 32);
-        $v = ord($sig[64]);
+            $r = substr($sig, 0, 32);
+            $s = substr($sig, 32, 32);
+            $v = ord($sig[64]);
 
-        // v normalisieren
-        if ($v >= 27) $v -= 27;
-        if ($v !== 0 && $v !== 1) return false;
+            // v normalisieren
+            if ($v >= 27) $v -= 27;
+            if ($v !== 0 && $v !== 1) return false;
 
-        // Public Key recovern via OpenSSL (PHP 8.1+)
-        $recovered = $this->ecRecover($msgHash, $r, $s, $v);
-        if (!$recovered) return false;
+            // EC Recovery – hash als hex übergeben
+            $ec  = new \Elliptic\EC("secp256k1");
+            $sig = ["r" => bin2hex($r), "s" => bin2hex($s)];
+            $pubKey = $ec->recoverPubKey($msgHashHex, $sig, $v);
+            $pubKeyHex = $pubKey->encode("hex");
 
-        $recoveredAddress = '0x' . substr($this->keccak256($recovered), 24);
+            // Adresse aus Public Key ableiten (ohne 04 Prefix)
+            $pubKeyBin = hex2bin(substr($pubKeyHex, 2));
+            $keccak = new \kornrunner\Keccak();
+            $addrHash = $keccak->hash($pubKeyBin, 256);
+            $recoveredAddress = '0x' . substr($addrHash, 24);
 
-        return strtolower($recoveredAddress) === strtolower($address);
+            return strtolower($recoveredAddress) === strtolower($address);
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     // ── User aus Wallet-Adresse holen oder erstellen ──────────────────────
@@ -126,19 +142,22 @@ class WalletAuthService
     // ── Keccak256 (vereinfacht via hash) ─────────────────────────────────
     private function keccak256(string $data): string
     {
-        // Nutzt die keccak PHP Extension falls verfügbar, sonst Fallback
-        if (function_exists('keccak_hash')) {
-            return keccak_hash($data, 256);
-        }
-        // Fallback: sha3-256 (nicht 100% identisch aber für Demo ausreichend)
-        return hash('sha3-256', $data);
+        return (new \kornrunner\Keccak())->hash($data, 256);
     }
 
     private function ecRecover(string $hash, string $r, string $s, int $v): ?string
     {
-        // Vereinfachte EC Recovery – in Produktion: web3.php library nutzen
-        // Für vollständige SIWE-Implementierung: composer require web3p/web3.php
-        return null; // Placeholder
+        try {
+            $ec = new \Elliptic\EC("secp256k1");
+            $sig = ["r" => bin2hex($r), "s" => bin2hex($s)];
+            $pubKey = $ec->recoverPubKey($hash, $sig, $v);
+            $pubKeyHex = $pubKey->encode("hex");
+            // Remove 04 uncompressed prefix
+            $pubKeyBin = hex2bin(substr($pubKeyHex, 2));
+            return $pubKeyBin;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     private function uuid(): string

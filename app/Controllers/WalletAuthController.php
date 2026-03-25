@@ -47,6 +47,9 @@ class WalletAuthController
         $signature = trim($_POST['signature'] ?? '');
         $nonce     = trim($_POST['nonce'] ?? '');
         $message   = trim($_POST['message'] ?? '');
+        file_put_contents(BASE_PATH . '/storage/logs/siwe_debug.log', json_encode(['msg_raw' => $_POST['message'] ?? '', 'msg_len' => strlen($_POST['message'] ?? ''), 'has_newline' => strpos($_POST['message'] ?? '', "
+") !== false]) . "
+", FILE_APPEND);
 
         if (!preg_match('/^0x[0-9a-fA-F]{40}$/', $address)
             || empty($signature) || empty($nonce) || empty($message)) {
@@ -90,6 +93,9 @@ class WalletAuthController
         $signature = trim($_POST['signature'] ?? '');
         $nonce     = trim($_POST['nonce'] ?? '');
         $message   = trim($_POST['message'] ?? '');
+        file_put_contents(BASE_PATH . '/storage/logs/siwe_debug.log', json_encode(['msg_raw' => $_POST['message'] ?? '', 'msg_len' => strlen($_POST['message'] ?? ''), 'has_newline' => strpos($_POST['message'] ?? '', "
+") !== false]) . "
+", FILE_APPEND);
 
         $service = new WalletAuthService();
 
@@ -105,3 +111,4 @@ class WalletAuthController
         echo json_encode(['success' => true]);
     }
 }
+// TEMP DEBUG - remove after fix
