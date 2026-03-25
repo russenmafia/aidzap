@@ -38,6 +38,8 @@ session_start([
     'gc_maxlifetime'  => (int)($_ENV['SESSION_LIFETIME'] ?? 7200),
 ]);
 
+\Core\Lang::init();
+
 require_once APP_PATH . '/Core/Router.php';
 $router = new Core\Router();
 require_once CONFIG_PATH . '/routes.php';

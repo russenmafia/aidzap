@@ -21,20 +21,20 @@ $active = $active ?? '';
   <aside class="sidebar">
     <a href="/admin" class="sb-logo">AID<span style="color:#e05454">ZAP</span> <span style="font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:.1em">ADMIN</span></a>
     <nav class="sb-nav">
-      <div class="sb-section">Overview</div>
+      <div class="sb-section"><?= __('admin.overview') ?></div>
       <a href="/admin" class="sb-item <?= $active === 'stats' ? 'active' : '' ?>">
-        <span class="sb-icon">&#9672;</span> Stats
+        <span class="sb-icon">&#9672;</span> <?= __('admin.stats') ?>
       </a>
       <a href="/admin/users" class="sb-item <?= $active === 'users' ? 'active' : '' ?>">
-        <span class="sb-icon">&#9635;</span> Users
+        <span class="sb-icon">&#9635;</span> <?= __('admin.users') ?>
       </a>
       <a href="/admin/system" class="sb-item <?= $active === 'system' ? 'active' : '' ?>">
-        <span class="sb-icon">&#9881;</span> System
+        <span class="sb-icon">&#9881;</span> <?= __('admin.system') ?>
       </a>
 
-      <div class="sb-section">Review</div>
+      <div class="sb-section"><?= __('admin.review') ?></div>
       <a href="/admin/review/units" class="sb-item <?= $active === 'review' && str_contains($_SERVER['REQUEST_URI'],'units') ? 'active' : '' ?>">
-        <span class="sb-icon">&#9635;</span> Ad Units
+        <span class="sb-icon">&#9635;</span> <?= __('admin.ad_units') ?>
         <?php
         $pendingUnits = \Core\Database::getInstance()->query("SELECT COUNT(*) FROM ad_units WHERE status='pending_review'")->fetchColumn();
         if ($pendingUnits > 0): ?>
@@ -42,7 +42,7 @@ $active = $active ?? '';
         <?php endif; ?>
       </a>
       <a href="/admin/review/banners" class="sb-item <?= $active === 'review' && str_contains($_SERVER['REQUEST_URI'],'banners') ? 'active' : '' ?>">
-        <span class="sb-icon">&#9672;</span> Banners
+        <span class="sb-icon">&#9672;</span> <?= __('admin.banners') ?>
         <?php
         $pendingBanners = \Core\Database::getInstance()->query("SELECT COUNT(*) FROM ad_banners WHERE status='pending_review'")->fetchColumn();
         if ($pendingBanners > 0): ?>
@@ -50,28 +50,33 @@ $active = $active ?? '';
         <?php endif; ?>
       </a>
 
-      <div class="sb-section">Content</div>
+      <div class="sb-section"><?= __('admin.content') ?></div>
       <a href="/admin/legal" class="sb-item <?= in_array($active, ['legal'], true) ? 'active' : '' ?>">
-        <span class="sb-icon">&#128196;</span> Legal Pages
+        <span class="sb-icon">&#128196;</span> <?= __('admin.legal_pages') ?>
       </a>
       <a href="/admin/faq" class="sb-item <?= $active === 'faq' ? 'active' : '' ?>">
-        <span class="sb-icon">&#10067;</span> FAQ
+        <span class="sb-icon">&#10067;</span> <?= __('admin.faq') ?>
       </a>
 
-      <div class="sb-section">Security</div>
+      <div class="sb-section"><?= __('admin.security') ?></div>
       <a href="/admin/fraud" class="sb-item <?= $active === 'fraud' ? 'active' : '' ?>">
-        <span class="sb-icon">&#9645;</span> Fraud Logs
+        <span class="sb-icon">&#9645;</span> <?= __('admin.fraud_logs') ?>
       </a>
       <a href="/admin/crons" class="sb-item <?= $active === 'crons' ? 'active' : '' ?>">
-        <span class="sb-icon">&#9680;</span> Cron Jobs
+        <span class="sb-icon">&#9680;</span> <?= __('admin.cron_jobs') ?>
       </a>
 
-      <div class="sb-section">Navigation</div>
+      <div class="sb-section"><?= __('admin.navigation') ?></div>
       <a href="/dashboard" class="sb-item">
-        <span class="sb-icon">&#8592;</span> Back to Dashboard
+        <span class="sb-icon">&#8592;</span> <?= __('admin.back_dashboard') ?>
       </a>
     </nav>
 
+    <div class="sb-lang" style="padding:8px 16px;display:flex;gap:10px;font-size:11px;opacity:0.5;">
+      <a href="/lang/en" style="color:inherit;text-decoration:none;<?= \Core\Lang::current()==='en'?'font-weight:700;opacity:1;':'' ?>">EN</a>
+      <span>|</span>
+      <a href="/lang/de" style="color:inherit;text-decoration:none;<?= \Core\Lang::current()==='de'?'font-weight:700;opacity:1;':'' ?>">DE</a>
+    </div>
     <div class="sb-user">
       <div class="sb-avatar" style="background:rgba(224,84,84,0.15);border-color:rgba(224,84,84,0.3);color:#e05454">
         <?= strtoupper(substr($_SESSION['username'] ?? 'A', 0, 2)) ?>

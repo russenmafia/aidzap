@@ -1,4 +1,7 @@
 <?php
+// Language switcher
+$router->get('/lang/:code', [\Controllers\LangController::class, 'switch']);
+
 $router->get('/',          [\Controllers\HomeController::class, 'index']);
 $router->get('/register',  [\Controllers\AuthController::class, 'registerForm']);
 $router->post('/register', [\Controllers\AuthController::class, 'register']);

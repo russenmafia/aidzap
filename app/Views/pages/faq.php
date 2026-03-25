@@ -34,11 +34,11 @@
 </style>
 
 <section class="faq-wrap">
-  <p class="section-label">FAQ</p>
-  <h1 class="section-title">Frequently Asked Questions</h1>
+  <p class="section-label"><?= __('faq.label') ?></p>
+  <h1 class="section-title"><?= __('faq.title') ?></h1>
 
   <?php if (empty($items)): ?>
-    <p class="hero-sub">No FAQ items available yet.</p>
+    <p class="hero-sub"><?= __('faq.no_items') ?></p>
   <?php else: ?>
     <?php foreach ($items as $item): ?>
       <div class="faq-item">

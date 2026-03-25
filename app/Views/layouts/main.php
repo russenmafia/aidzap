@@ -49,17 +49,23 @@
 <nav class="nav">
   <a href="/" class="logo">AID<span>ZAP</span></a>
   <ul class="nav-links">
-    <li><a href="/advertiser">Advertiser</a></li>
-    <li><a href="/publisher">Publisher</a></li>
-    <li><a href="/pricing">Pricing</a></li>
+    <li><a href="/advertiser"><?= __('nav.advertiser') ?></a></li>
+    <li><a href="/publisher"><?= __('nav.publisher') ?></a></li>
+    <li><a href="/pricing"><?= __('nav.pricing') ?></a></li>
+    <li><a href="/faq"><?= __('nav.faq') ?></a></li>
   </ul>
   <div class="nav-cta">
+    <div class="lang-switcher">
+      <a href="/lang/en" class="<?= \Core\Lang::current() === 'en' ? 'active' : '' ?>">EN</a>
+      <span>|</span>
+      <a href="/lang/de" class="<?= \Core\Lang::current() === 'de' ? 'active' : '' ?>">DE</a>
+    </div>
     <?php if (isset($_SESSION['user_id'])): ?>
-      <a href="/dashboard" class="btn-ghost">Dashboard</a>
-      <a href="/logout" class="btn-ghost">Logout</a>
+      <a href="/dashboard" class="btn-ghost"><?= __('nav.dashboard') ?></a>
+      <a href="/logout" class="btn-ghost"><?= __('nav.logout') ?></a>
     <?php else: ?>
-      <a href="/login" class="btn-ghost">Login</a>
-      <a href="/register" class="btn-primary">Get started</a>
+      <a href="/login" class="btn-ghost"><?= __('nav.login') ?></a>
+      <a href="/register" class="btn-primary"><?= __('nav.register') ?></a>
     <?php endif; ?>
   </div>
 </nav>
@@ -67,7 +73,7 @@
 <footer class="footer">
   <div class="footer-inner">
     <span class="logo">AID<span>ZAP</span></span>
-    <span class="footer-copy">Privacy-first advertising. No KYC. No tracking.</span>
+    <span class="footer-copy"><?= __('footer.tagline') ?></span>
   </div>
 </footer>
 </body>

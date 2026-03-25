@@ -1,6 +1,6 @@
 <div class="auth-card">
-  <h1 class="auth-title">Create account</h1>
-  <p class="auth-subtitle">No email required. No KYC. Start in 60 seconds.</p>
+  <h1 class="auth-title"><?= __('auth.register_title') ?></h1>
+  <p class="auth-subtitle"><?= __('auth.register_subtitle') ?></p>
 
   <?php if (!empty($errors)): ?>
   <div class="alert alert-error">
@@ -11,8 +11,8 @@
   <!-- Wallet Register -->
   <button type="button" class="btn-wallet-login" id="wallet-register-btn" onclick="registerWithWallet()">
     <span class="wallet-icon">&#9830;</span>
-    <span id="wallet-register-text">Sign up with Wallet</span>
-    <span class="wallet-hint">MetaMask / WalletConnect – no password needed</span>
+    <span id="wallet-register-text"><?= __('auth.wallet_register_btn') ?></span>
+    <span class="wallet-hint"><?= __('auth.wallet_register_hint') ?></span>
   </button>
 
   <div class="auth-divider"><span>or</span></div>
@@ -22,44 +22,44 @@
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
 
     <div class="field">
-      <label>Username</label>
+      <label><?= __('auth.username') ?></label>
       <input type="text" name="username" value="<?= htmlspecialchars($old['username'] ?? '') ?>"
              placeholder="satoshi_nakamoto" minlength="3" maxlength="32" required autofocus>
-      <span class="field-hint">3–32 characters. Letters, numbers, underscores.</span>
+      <span class="field-hint"><?= __('auth.username_hint') ?></span>
     </div>
 
     <div class="field">
-      <label>Password</label>
-      <input type="password" name="password" placeholder="Min. 12 characters" minlength="12" required>
+      <label><?= __('auth.password') ?></label>
+      <input type="password" name="password" placeholder="<?= __('auth.password_hint') ?>" minlength="12" required>
     </div>
 
     <div class="field">
-      <label>Confirm password</label>
-      <input type="password" name="password_confirm" placeholder="Repeat password" required>
+      <label><?= __('auth.password_confirm') ?></label>
+      <input type="password" name="password_confirm" placeholder="<?= __('auth.password_confirm_hint') ?>" required>
     </div>
 
     <div class="field">
-      <label>Account type</label>
+      <label><?= __('auth.account_type') ?></label>
       <div class="role-toggle">
         <label class="role-option">
           <input type="radio" name="role" value="advertiser" <?= ($old['role'] ?? '') === 'advertiser' ? 'checked' : '' ?>>
           <span class="role-label">
-            <span class="role-title">Advertiser</span>
-            <span class="role-desc">Run campaigns</span>
+            <span class="role-title"><?= __('auth.role_advertiser') ?></span>
+            <span class="role-desc"><?= __('auth.role_advertiser_desc') ?></span>
           </span>
         </label>
         <label class="role-option">
           <input type="radio" name="role" value="publisher" <?= ($old['role'] ?? 'publisher') === 'publisher' ? 'checked' : '' ?>>
           <span class="role-label">
-            <span class="role-title">Publisher</span>
-            <span class="role-desc">Monetize traffic</span>
+            <span class="role-title"><?= __('auth.role_publisher') ?></span>
+            <span class="role-desc"><?= __('auth.role_publisher_desc') ?></span>
           </span>
         </label>
         <label class="role-option">
           <input type="radio" name="role" value="both" <?= ($old['role'] ?? '') === 'both' ? 'checked' : '' ?>>
           <span class="role-label">
-            <span class="role-title">Both</span>
-            <span class="role-desc">Advertise &amp; earn</span>
+            <span class="role-title"><?= __('auth.role_both') ?></span>
+            <span class="role-desc"><?= __('auth.role_both_desc') ?></span>
           </span>
         </label>
       </div>
@@ -68,18 +68,18 @@
     <?php if (!empty($ref_code)): ?>
     <input type="hidden" name="ref_code" value="<?= htmlspecialchars($ref_code) ?>">
     <div style="padding:10px 14px;background:rgba(62,207,142,0.06);border:0.5px solid rgba(62,207,142,0.2);border-radius:8px;font-size:12px;color:rgba(62,207,142,0.8);margin-bottom:12px">
-      ✓ Referred by a friend – referral bonus applied
+      <?= __('auth.referred_by_friend') ?>
     </div>
     <?php endif; ?>
 
-    <button type="submit" class="btn-submit">Create account &#x2192;</button>
+    <button type="submit" class="btn-submit"><?= __('auth.register_btn') ?></button>
   </form>
 
-  <p class="auth-switch">Already have an account? <a href="/login">Sign in</a></p>
+  <p class="auth-switch"><?= __('auth.already_account') ?> <a href="/login"><?= __('auth.sign_in_link') ?></a></p>
 
   <div class="privacy-note">
     <span class="privacy-icon">&#x1F512;</span>
-    We store no personal data. Your IP is hashed, never logged in plain text.
+    <?= __('auth.privacy_note') ?>
   </div>
 </div>
 

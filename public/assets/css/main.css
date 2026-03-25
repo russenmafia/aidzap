@@ -53,10 +53,15 @@ h1 strong{font-weight:500}
 .footer{padding:24px 48px;border-top:0.5px solid rgba(255,255,255,0.06)}
 .footer-inner{display:flex;align-items:center;gap:16px}
 .footer-copy{font-size:12px;color:rgba(255,255,255,0.25)}
+.lang-switcher{display:inline-flex;align-items:center;gap:6px;font-size:0.85rem}
+.lang-switcher a{color:inherit;text-decoration:none;opacity:0.6}
+.lang-switcher a.active{opacity:1;font-weight:700}
+.lang-switcher span{opacity:0.3}
 @media(max-width:768px){
   .nav{padding:16px 24px}.nav-links{display:none}
   h1{font-size:36px}.hero{padding:64px 24px 48px}
   .stats-bar{gap:28px;padding:32px 24px}
   .features-grid{grid-template-columns:1fr}
   .features,.vs-section,.cta-section{padding:56px 24px}
+  .lang-switcher{font-size:0.8rem}
 }
