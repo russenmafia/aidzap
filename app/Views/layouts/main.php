@@ -15,13 +15,13 @@
 <meta property="og:title" content="<?= htmlspecialchars($og_title ?? $title ?? 'aidzap – Privacy-First Crypto Ad Network') ?>">
 <meta property="og:description" content="<?= htmlspecialchars($og_desc ?? $meta_desc ?? 'Anonymous crypto advertising. No KYC, no cookies, no tracking. Earn BTC with your website.') ?>">
 <meta property="og:url" content="https://aidzap.com<?= htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/') ?>">
-<meta property="og:image" content="https://aidzap.com/assets/og-image.png">
+<meta property="og:image" content="https://aidzap.com/assets/img/og-image.png">
 
 <!-- Twitter/X Card -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="<?= htmlspecialchars($og_title ?? $title ?? 'aidzap') ?>">
 <meta name="twitter:description" content="<?= htmlspecialchars($og_desc ?? $meta_desc ?? 'Anonymous crypto advertising. No KYC, no tracking.') ?>">
-<meta name="twitter:image" content="https://aidzap.com/assets/og-image.png">
+<meta name="twitter:image" content="https://aidzap.com/assets/img/og-image.png">
 
 <!-- Schema.org -->
 <script type="application/ld+json">
