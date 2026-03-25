@@ -266,7 +266,6 @@ class AdminController
         }
         header('Location: /admin/fraud?done=1'); exit;
     }
-}
 
     // ── Cron Overview ────────────────────────────────────────────────────────
     public function crons(): void
@@ -318,7 +317,6 @@ class AdminController
         header('Content-Type: text/plain');
         echo $output;
     }
-}
 
     public function system(): void
     {
@@ -335,3 +333,4 @@ class AdminController
         if (function_exists('opcache_reset')) opcache_reset();
         header('Location: /admin/system?cleared=1'); exit;
     }
+}

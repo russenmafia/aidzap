@@ -21,7 +21,7 @@ class Router
     {
         $method = $_SERVER['REQUEST_METHOD'];
         $uri    = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-        $uri    = rtrim($uri, '/') ?: '/';
+        $uri = rtrim((string)($uri ?? "/"), "/") ?: "/";;
 
         if (isset($this->routes[$method][$uri])) {
             $this->call($this->routes[$method][$uri]);
