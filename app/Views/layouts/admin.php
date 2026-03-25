@@ -28,6 +28,9 @@ $active = $active ?? '';
       <a href="/admin/users" class="sb-item <?= $active === 'users' ? 'active' : '' ?>">
         <span class="sb-icon">&#9635;</span> Users
       </a>
+      <a href="/admin/system" class="sb-item <?= $active === 'system' ? 'active' : '' ?>">
+        <span class="sb-icon">&#9881;</span> System
+      </a>
 
       <div class="sb-section">Review</div>
       <a href="/admin/review/units" class="sb-item <?= $active === 'review' && str_contains($_SERVER['REQUEST_URI'],'units') ? 'active' : '' ?>">

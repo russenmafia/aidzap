@@ -266,6 +266,7 @@ class AdminController
         }
         header('Location: /admin/fraud?done=1'); exit;
     }
+}
 
     // ── Cron Overview ────────────────────────────────────────────────────────
     public function crons(): void
@@ -319,3 +320,18 @@ class AdminController
     }
 }
 
+    public function system(): void
+    {
+        AdminAuth::require();
+        View::render('admin/system', [
+            'title'  => 'System Overview',
+            'active' => 'system',
+        ], 'admin');
+    }
+
+    public function clearCache(): void
+    {
+        AdminAuth::require();
+        if (function_exists('opcache_reset')) opcache_reset();
+        header('Location: /admin/system?cleared=1'); exit;
+    }

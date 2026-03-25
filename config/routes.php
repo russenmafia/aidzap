@@ -109,3 +109,7 @@ $router->get('/robots.txt', function() {
     header('Content-Type: text/plain');
     readfile(BASE_PATH . '/public/robots.txt');
 });
+
+// System Overview
+$router->get('/admin/system',              [\Controllers\AdminController::class, 'system']);
+$router->post('/admin/system/clear-cache', [\Controllers\AdminController::class, 'clearCache']);
