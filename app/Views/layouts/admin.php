@@ -50,6 +50,14 @@ $active = $active ?? '';
         <?php endif; ?>
       </a>
 
+      <div class="sb-section">Content</div>
+      <a href="/admin/legal" class="sb-item <?= in_array($active, ['legal'], true) ? 'active' : '' ?>">
+        <span class="sb-icon">&#128196;</span> Legal Pages
+      </a>
+      <a href="/admin/faq" class="sb-item <?= $active === 'faq' ? 'active' : '' ?>">
+        <span class="sb-icon">&#10067;</span> FAQ
+      </a>
+
       <div class="sb-section">Security</div>
       <a href="/admin/fraud" class="sb-item <?= $active === 'fraud' ? 'active' : '' ?>">
         <span class="sb-icon">&#9645;</span> Fraud Logs

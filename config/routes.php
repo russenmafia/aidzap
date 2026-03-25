@@ -44,6 +44,25 @@ $router->post('/admin/review/banners/action', [\Controllers\AdminController::cla
 $router->get('/admin/fraud',                  [\Controllers\AdminController::class, 'fraud']);
 $router->post('/admin/fraud/unblacklist',     [\Controllers\AdminController::class, 'unblacklist']);
 
+// Legal Pages Admin
+$router->get('/admin/legal',                  [\Controllers\AdminController::class, 'legalPages']);
+$router->get('/admin/legal/:slug',            [\Controllers\AdminController::class, 'legalPageEdit']);
+$router->post('/admin/legal/:slug',           [\Controllers\AdminController::class, 'legalPageUpdate']);
+
+// FAQ Admin
+$router->get('/admin/faq',                    [\Controllers\AdminController::class, 'faqIndex']);
+$router->get('/admin/faq/add',                [\Controllers\AdminController::class, 'faqAdd']);
+$router->post('/admin/faq/add',               [\Controllers\AdminController::class, 'faqStore']);
+$router->get('/admin/faq/:id',                [\Controllers\AdminController::class, 'faqEdit']);
+$router->post('/admin/faq/:id',               [\Controllers\AdminController::class, 'faqUpdate']);
+$router->post('/admin/faq/:id/delete',        [\Controllers\AdminController::class, 'faqDelete']);
+
+// Public Pages
+$router->get('/terms',                        [\Controllers\PageController::class, 'legal']);
+$router->get('/privacy',                      [\Controllers\PageController::class, 'legal']);
+$router->get('/impressum',                    [\Controllers\PageController::class, 'legal']);
+$router->get('/faq',                          [\Controllers\PageController::class, 'faq']);
+
 // Banner Routes
 $router->get('/advertiser/campaigns/:uuid/banners',              [\Controllers\BannerController::class, 'index']);
 $router->get('/advertiser/campaigns/:uuid/banners/create',       [\Controllers\BannerController::class, 'createForm']);

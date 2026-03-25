@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Controllers;
 
 use Core\AdminAuth;
+use Core\Auth;
 use Core\Database;
 use Core\View;
 
@@ -266,6 +267,181 @@ class AdminController
         }
         header('Location: /admin/fraud?done=1'); exit;
     }
+<<<<<<< HEAD
+=======
+
+    // ── Legal Pages ──────────────────────────────────────────────────────────
+    public function legalPages(): void
+    {
+        AdminAuth::require();
+        $db = Database::getInstance();
+
+        $pages = $db->query('SELECT id, slug, title, content, updated_at FROM legal_pages ORDER BY FIELD(slug, "terms", "privacy", "impressum")')->fetchAll();
+
+        View::render('admin/legal/index', [
+            'title' => 'Legal Pages',
+            'active' => 'legal',
+            'pages' => $pages,
+        ], 'admin');
+    }
+
+    public function legalPageEdit(string $slug): void
+    {
+        AdminAuth::require();
+        $db = Database::getInstance();
+
+        $stmt = $db->prepare('SELECT id, slug, title, content, updated_at FROM legal_pages WHERE slug = ? LIMIT 1');
+        $stmt->execute([$slug]);
+        $page = $stmt->fetch();
+
+        if (!$page) {
+            http_response_code(404);
+            echo 'Not found';
+            return;
+        }
+
+        View::render('admin/legal/edit', [
+            'title' => 'Edit Legal Page',
+            'active' => 'legal',
+            'page' => $page,
+            'csrf_token' => Auth::csrfToken(),
+        ], 'admin');
+    }
+
+    public function legalPageUpdate(string $slug): void
+    {
+        AdminAuth::require();
+        Auth::csrfVerify($_POST['csrf_token'] ?? '');
+
+        $title = trim($_POST['title'] ?? '');
+        $content = trim((string)($_POST['content'] ?? ''));
+
+        if ($title === '') {
+            $title = ucfirst($slug);
+        }
+
+        $db = Database::getInstance();
+        $stmt = $db->prepare('UPDATE legal_pages SET title = ?, content = ? WHERE slug = ?');
+        $stmt->execute([$title, $content, $slug]);
+
+        header('Location: /admin/legal/' . urlencode($slug) . '?saved=1');
+        exit;
+    }
+
+    // ── FAQ ─────────────────────────────────────────────────────────────────
+    public function faqIndex(): void
+    {
+        AdminAuth::require();
+        $db = Database::getInstance();
+
+        $items = $db->query('SELECT id, question, answer, sort_order, is_active, created_at FROM faq_items ORDER BY sort_order ASC, id ASC')->fetchAll();
+
+        View::render('admin/faq/index', [
+            'title' => 'FAQ',
+            'active' => 'faq',
+            'items' => $items,
+            'csrf_token' => Auth::csrfToken(),
+        ], 'admin');
+    }
+
+    public function faqAdd(): void
+    {
+        AdminAuth::require();
+
+        View::render('admin/faq/form', [
+            'title' => 'Add FAQ Item',
+            'active' => 'faq',
+            'mode' => 'add',
+            'item' => [
+                'question' => '',
+                'answer' => '',
+                'sort_order' => 1,
+            ],
+            'csrf_token' => Auth::csrfToken(),
+        ], 'admin');
+    }
+
+    public function faqStore(): void
+    {
+        AdminAuth::require();
+        Auth::csrfVerify($_POST['csrf_token'] ?? '');
+
+        $question = trim($_POST['question'] ?? '');
+        $answer = trim((string)($_POST['answer'] ?? ''));
+        $sortOrder = max(1, (int)($_POST['sort_order'] ?? 1));
+
+        if ($question === '' || $answer === '') {
+            header('Location: /admin/faq/add?error=1');
+            exit;
+        }
+
+        $db = Database::getInstance();
+        $stmt = $db->prepare('INSERT INTO faq_items (question, answer, sort_order, is_active) VALUES (?, ?, ?, 1)');
+        $stmt->execute([$question, $answer, $sortOrder]);
+
+        header('Location: /admin/faq?saved=1');
+        exit;
+    }
+
+    public function faqEdit(int $id): void
+    {
+        AdminAuth::require();
+        $db = Database::getInstance();
+
+        $stmt = $db->prepare('SELECT id, question, answer, sort_order, is_active FROM faq_items WHERE id = ? LIMIT 1');
+        $stmt->execute([$id]);
+        $item = $stmt->fetch();
+
+        if (!$item) {
+            http_response_code(404);
+            echo 'Not found';
+            return;
+        }
+
+        View::render('admin/faq/form', [
+            'title' => 'Edit FAQ Item',
+            'active' => 'faq',
+            'mode' => 'edit',
+            'item' => $item,
+            'csrf_token' => Auth::csrfToken(),
+        ], 'admin');
+    }
+
+    public function faqUpdate(int $id): void
+    {
+        AdminAuth::require();
+        Auth::csrfVerify($_POST['csrf_token'] ?? '');
+
+        $question = trim($_POST['question'] ?? '');
+        $answer = trim((string)($_POST['answer'] ?? ''));
+        $sortOrder = max(1, (int)($_POST['sort_order'] ?? 1));
+
+        if ($question === '' || $answer === '') {
+            header('Location: /admin/faq/' . $id . '?error=1');
+            exit;
+        }
+
+        $db = Database::getInstance();
+        $stmt = $db->prepare('UPDATE faq_items SET question = ?, answer = ?, sort_order = ?, is_active = 1 WHERE id = ?');
+        $stmt->execute([$question, $answer, $sortOrder, $id]);
+
+        header('Location: /admin/faq?saved=1');
+        exit;
+    }
+
+    public function faqDelete(int $id): void
+    {
+        AdminAuth::require();
+        Auth::csrfVerify($_POST['csrf_token'] ?? '');
+
+        $db = Database::getInstance();
+        $stmt = $db->prepare('DELETE FROM faq_items WHERE id = ?');
+        $stmt->execute([$id]);
+
+        header('Location: /admin/faq?deleted=1');
+        exit;
+    }
+>>>>>>> e2b76bc (legal)
 
     // ── Cron Overview ────────────────────────────────────────────────────────
     public function crons(): void
