@@ -440,4 +440,10 @@ return [
     'billing.min_withdraw' => 'Min. withdrawal',
     'withdraw.flash_done' => 'Withdrawal request submitted. Processing within 24 hours.',
     'withdraw.kyc_required' => 'KYC required',
+
+    // ── WalletConnect / Web3Modal ────────────────────────────────────────
+    'auth.connect_wallet'     => 'Connect Wallet',
+    'auth.connecting'         => 'Connecting...',
+    'auth.or'                 => 'or',
+    'settings.connecting'     => 'Connecting...',
 ];

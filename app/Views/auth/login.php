@@ -20,10 +20,10 @@
   <?php endif; ?>
 
   <!-- Wallet Login -->
-  <button type="button" class="btn-wallet-login" id="wallet-btn" onclick="connectWallet()">
-    <span class="wallet-icon">&#9830;</span>
-    <span id="wallet-btn-text"><?= __('auth.wallet_login_btn') ?></span>
-    <span class="wallet-hint"><?= __('auth.wallet_connect_hint') ?></span>
+  <script>const WC_PROJECT_ID = '<?= htmlspecialchars($wc_project_id ?? '') ?>';</script>
+  <button type="button" class="btn-wallet-login" id="wallet-btn" onclick="handleWalletLogin()">
+    <span style="color:#7f77dd;font-size:16px">&#9830;</span>
+    <span id="wallet-btn-text"><?= __('auth.connect_wallet') ?></span>
   </button>
 
   <div class="auth-divider"><span><?= __('auth.or_divider') ?></span></div>
@@ -52,66 +52,36 @@
   <p class="auth-switch"><?= __('auth.no_account') ?> <a href="/register"><?= __('auth.create_free') ?></a></p>
 </div>
 
-<script>
-async function connectWallet() {
-  const btn = document.getElementById('wallet-btn');
-  document.getElementById('wallet-btn-text').textContent = 'Connecting...';
-  btn.disabled = true;
+<script type="module">
+import { connectWallet } from '/assets/js/wallet.js';
 
-  try {
-    // MetaMask verfügbar?
-    if (typeof window.ethereum === 'undefined') {
-      alert('MetaMask not found. Please install MetaMask or use WalletConnect.');
-      btn.disabled = false;
-      document.getElementById('wallet-btn-text').textContent = 'Sign in with Wallet';
-      return;
+window.handleWalletLogin = async function() {
+    const btn     = document.getElementById('wallet-btn');
+    const btnText = document.getElementById('wallet-btn-text');
+    btnText.textContent = '<?= __('auth.connecting') ?>';
+    btn.disabled = true;
+
+    try {
+        const { address, signature, nonce, message } = await connectWallet(WC_PROJECT_ID);
+
+        const fd = new FormData();
+        fd.append('address',   address);
+        fd.append('signature', signature);
+        fd.append('nonce',     nonce);
+        fd.append('message',   message);
+
+        const resp = await fetch('/wallet/verify', { method: 'POST', body: fd });
+        const data = await resp.json();
+
+        if (data.error) alert('Error: ' + data.error);
+        else window.location.href = data.redirect ?? '/dashboard';
+
+    } catch(e) {
+        if (e.code === 4001) alert('Request rejected. Please approve the signature request.');
+        else alert('Connection failed: ' + e.message);
     }
 
-    // Accounts anfordern
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    const address  = accounts[0];
-
-    // Nonce vom Server holen
-    const nonceResp = await fetch('/wallet/nonce');
-    const { nonce } = await nonceResp.json();
-
-    // SIWE Message holen
-    const msgFd = new FormData();
-    msgFd.append('address', address);
-    msgFd.append('nonce', nonce);
-    const msgResp = await fetch('/wallet/message', { method: 'POST', body: msgFd });
-    const { message } = await msgResp.json();
-
-    // Signatur anfordern
-    const signature = await window.ethereum.request({
-      method: 'personal_sign',
-      params: [message, address],
-    });
-
-    // Verifizieren
-    const verifyFd = new FormData();
-    verifyFd.append('address', address);
-    verifyFd.append('signature', signature);
-    verifyFd.append('nonce', nonce);
-    verifyFd.append('message', message);
-    const verifyResp = await fetch('/wallet/verify', { method: 'POST', body: verifyFd });
-    const result = await verifyResp.json();
-
-    if (result.error) {
-      alert('Error: ' + result.error);
-    } else {
-      window.location.href = result.redirect || '/dashboard';
-    }
-
-  } catch(e) {
-    if (e.code === 4001) {
-      alert('Request rejected. Please approve the signature request in MetaMask.');
-    } else {
-      alert('Connection failed: ' + e.message);
-    }
-  }
-
-  btn.disabled = false;
-  document.getElementById('wallet-btn-text').textContent = 'Sign in with Wallet';
-}
+    btnText.textContent = '<?= __('auth.connect_wallet') ?>';
+    btn.disabled = false;
+};
 </script>

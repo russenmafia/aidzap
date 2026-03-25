@@ -109,12 +109,13 @@ class AccountController
         $user = $stmt->fetch();
 
         View::render('dashboard/settings', [
-            'title'      => 'Settings',
-            'active'     => 'settings',
-            'user'       => $user,
-            'csrf_token' => Auth::csrfToken(),
-            'errors'     => [],
-            'success'    => $_GET['saved'] ?? null,
+            'title'         => 'Settings',
+            'active'        => 'settings',
+            'user'          => $user,
+            'csrf_token'    => Auth::csrfToken(),
+            'errors'        => [],
+            'success'       => $_GET['saved'] ?? null,
+            'wc_project_id' => $_ENV['WALLETCONNECT_PROJECT_ID'] ?? '',
         ], 'dashboard');
     }
 
@@ -283,12 +284,13 @@ class AccountController
         $user = $stmt->fetch();
 
         View::render('dashboard/settings', [
-            'title'      => 'Settings',
-            'active'     => 'settings',
-            'user'       => $user,
-            'csrf_token' => Auth::csrfToken(),
-            'errors'     => $errors,
-            'success'    => null,
+            'title'         => 'Settings',
+            'active'        => 'settings',
+            'user'          => $user,
+            'csrf_token'    => Auth::csrfToken(),
+            'errors'        => $errors,
+            'success'       => null,
+            'wc_project_id' => $_ENV['WALLETCONNECT_PROJECT_ID'] ?? '',
         ], 'dashboard');
     }
 }

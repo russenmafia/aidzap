@@ -86,7 +86,8 @@ if (!empty($success) && isset($successMessages[$success])): ?>
     <button type="submit" class="btn-reject" onclick="return confirm('Disconnect wallet login?')"><?= __('settings.disconnect_wallet') ?></button>
   </form>
   <?php else: ?>
-  <p style="font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:16px">No wallet connected. Connect MetaMask to enable wallet login.</p>
+  <script>const WC_PROJECT_ID = '<?= htmlspecialchars($wc_project_id ?? '') ?>';</script>
+  <p style="font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:16px"><?= __('settings.no_wallet') ?></p>
   <button type="button" class="btn-wallet-login" style="max-width:300px" onclick="linkWallet()">
     <span style="color:#7f77dd;font-size:16px">&#9830;</span>
     <span id="link-btn-text" style="font-size:13px;font-weight:500;color:#fff"><?= __('settings.connect_wallet') ?></span>
@@ -138,46 +139,34 @@ if (!empty($success) && isset($successMessages[$success])): ?>
   </form>
 </div>
 
-<script>
-async function linkWallet() {
-  if (typeof window.ethereum === 'undefined') {
-    alert('MetaMask not found. Please install MetaMask.'); return;
-  }
-  document.getElementById('link-btn-text').textContent = 'Connecting...';
+<script type="module">
+import { connectWallet } from '/assets/js/wallet.js';
 
-  try {
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    const address  = accounts[0];
+window.linkWallet = async function() {
+    const btnText = document.getElementById('link-btn-text');
+    btnText.textContent = '<?= __('settings.connecting') ?>';
 
-    const nonceResp = await fetch('/wallet/nonce');
-    const { nonce } = await nonceResp.json();
+    try {
+        const { address, signature, nonce, message } = await connectWallet(
+            typeof WC_PROJECT_ID !== 'undefined' ? WC_PROJECT_ID : ''
+        );
 
-    const msgFd = new FormData();
-    msgFd.append('address', address);
-    msgFd.append('nonce', nonce);
-    const msgResp = await fetch('/wallet/message', { method: 'POST', body: msgFd });
-    const { message } = await msgResp.json();
+        const fd = new FormData();
+        fd.append('address',   address);
+        fd.append('signature', signature);
+        fd.append('nonce',     nonce);
+        fd.append('message',   message);
 
-    const signature = await window.ethereum.request({
-      method: 'personal_sign',
-      params: [message, address],
-    });
+        const resp = await fetch('/account/settings/wallet/link', { method: 'POST', body: fd });
+        const data = await resp.json();
 
-    const fd = new FormData();
-    fd.append('address', address);
-    fd.append('signature', signature);
-    fd.append('nonce', nonce);
-    fd.append('message', message);
+        if (data.error) alert('Error: ' + data.error);
+        else window.location.reload();
 
-    const resp = await fetch('/account/settings/wallet/link', { method: 'POST', body: fd });
-    const data = await resp.json();
+    } catch(e) {
+        alert('Connection failed: ' + e.message);
+    }
 
-    if (data.error) alert('Error: ' + data.error);
-    else window.location.reload();
-
-  } catch(e) {
-    alert('Connection failed: ' + e.message);
-  }
-  document.getElementById('link-btn-text').textContent = 'Connect Wallet';
-}
+    btnText.textContent = '<?= __('settings.connect_wallet') ?>';
+};
 </script>

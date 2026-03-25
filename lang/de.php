@@ -406,4 +406,10 @@ return [
     'billing.min_withdraw' => 'Min. Auszahlung',
     'withdraw.flash_done' => 'Auszahlungsanfrage eingereicht. Bearbeitung innerhalb von 24 Stunden.',
     'withdraw.kyc_required' => 'KYC erforderlich',
+
+    // ── WalletConnect / Web3Modal ────────────────────────────────────────
+    'auth.connect_wallet'     => 'Wallet verbinden',
+    'auth.connecting'         => 'Verbinde...',
+    'auth.or'                 => 'oder',
+    'settings.connecting'     => 'Verbinde...',
 ];

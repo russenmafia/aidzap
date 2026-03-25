@@ -9,13 +9,14 @@
   <?php endif; ?>
 
   <!-- Wallet Register -->
-  <button type="button" class="btn-wallet-login" id="wallet-register-btn" onclick="registerWithWallet()">
-    <span class="wallet-icon">&#9830;</span>
-    <span id="wallet-register-text"><?= __('auth.wallet_register_btn') ?></span>
-    <span class="wallet-hint"><?= __('auth.wallet_register_hint') ?></span>
+  <script>const WC_PROJECT_ID = '<?= htmlspecialchars($wc_project_id ?? '') ?>';</script>
+  <button type="button" class="btn-wallet-login" id="wallet-register-btn" onclick="handleWalletRegister()">
+    <span style="color:#7f77dd;font-size:16px">&#9830;</span>
+    <span id="wallet-register-text"><?= __('auth.connect_wallet') ?></span>
   </button>
+  <div id="wallet-confirm" style="display:none;font-size:12px;color:#3ecf8e;margin-top:6px;text-align:center"></div>
 
-  <div class="auth-divider"><span>or</span></div>
+  <div class="auth-divider"><span><?= __('auth.or_divider') ?></span></div>
 
   <!-- Username/Password Register -->
   <form method="POST" action="/register" class="auth-form">
@@ -72,6 +73,12 @@
     </div>
     <?php endif; ?>
 
+    <!-- Hidden wallet fields (populated by handleWalletRegister) -->
+    <input type="hidden" id="reg-wallet-address"   name="wallet_address">
+    <input type="hidden" id="reg-wallet-signature" name="wallet_signature">
+    <input type="hidden" id="reg-wallet-nonce"     name="wallet_nonce">
+    <input type="hidden" id="reg-wallet-message"   name="wallet_message">
+
     <button type="submit" class="btn-submit"><?= __('auth.register_btn') ?></button>
   </form>
 
@@ -83,64 +90,34 @@
   </div>
 </div>
 
-<script>
-async function registerWithWallet() {
-  if (typeof window.ethereum === 'undefined') {
-    alert('MetaMask not found. Please install MetaMask or use the form below.');
-    return;
-  }
+<script type="module">
+import { connectWallet } from '/assets/js/wallet.js';
 
-  const btn = document.getElementById('wallet-register-btn');
-  document.getElementById('wallet-register-text').textContent = 'Connecting...';
-  btn.disabled = true;
+window.handleWalletRegister = async function() {
+    const btn     = document.getElementById('wallet-register-btn');
+    const btnText = document.getElementById('wallet-register-text');
+    btnText.textContent = '<?= __('auth.connecting') ?>';
+    btn.disabled = true;
 
-  try {
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    const address  = accounts[0];
+    try {
+        const { address, signature, nonce, message } = await connectWallet(WC_PROJECT_ID);
 
-    // Nonce holen
-    const nonceResp = await fetch('/wallet/nonce');
-    const { nonce } = await nonceResp.json();
+        document.getElementById('reg-wallet-address').value   = address;
+        document.getElementById('reg-wallet-signature').value = signature;
+        document.getElementById('reg-wallet-nonce').value     = nonce;
+        document.getElementById('reg-wallet-message').value   = message;
 
-    // Message holen
-    const msgFd = new FormData();
-    msgFd.append('address', address);
-    msgFd.append('nonce', nonce);
-    const msgResp = await fetch('/wallet/message', { method: 'POST', body: msgFd });
-    const { message } = await msgResp.json();
+        const confirm = document.getElementById('wallet-confirm');
+        confirm.textContent = address.slice(0,6) + '...' + address.slice(-4) + ' ✓';
+        confirm.style.display = 'block';
 
-    // Signatur
-    const signature = await window.ethereum.request({
-      method: 'personal_sign',
-      params: [message, address],
-    });
-
-    // Verifizieren + Account erstellen
-    const fd = new FormData();
-    fd.append('address', address);
-    fd.append('signature', signature);
-    fd.append('nonce', nonce);
-    fd.append('message', message);
-
-    const resp = await fetch('/wallet/verify', { method: 'POST', body: fd });
-    const data = await resp.json();
-
-    if (data.error) {
-      alert('Error: ' + data.error);
-    } else {
-      window.location.href = data.redirect || '/dashboard';
+    } catch(e) {
+        if (e.code === 4001) alert('Request rejected. Please approve the signature request.');
+        else alert('Connection failed: ' + e.message);
     }
 
-  } catch(e) {
-    if (e.code === 4001) {
-      alert('Request rejected. Please approve the signature in MetaMask.');
-    } else {
-      alert('Connection failed: ' + e.message);
-    }
-  }
-
-  document.getElementById('wallet-register-text').textContent = 'Sign up with Wallet';
-  btn.disabled = false;
-}
+    btnText.textContent = '<?= __('auth.connect_wallet') ?>';
+    btn.disabled = false;
+};
 </script>
 

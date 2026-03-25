@@ -18,11 +18,12 @@ class AuthController
         if ($refCode) $_SESSION['ref_code'] = $refCode;
 
         View::render('auth/register', [
-            'title'      => 'Create account',
-            'csrf_token' => Auth::csrfToken(),
-            'errors'     => [],
-            'old'        => [],
-            'ref_code'   => $refCode,
+            'title'         => 'Create account',
+            'csrf_token'    => Auth::csrfToken(),
+            'errors'        => [],
+            'old'           => [],
+            'ref_code'      => $refCode,
+            'wc_project_id' => $_ENV['WALLETCONNECT_PROJECT_ID'] ?? '',
         ], 'auth');
     }
 
@@ -54,10 +55,11 @@ class AuthController
 
         if (!empty($errors)) {
             View::render('auth/register', [
-                'title'      => 'Create account',
-                'csrf_token' => Auth::csrfToken(),
-                'errors'     => $errors,
-                'old'        => compact('username', 'role'),
+                'title'         => 'Create account',
+                'csrf_token'    => Auth::csrfToken(),
+                'errors'        => $errors,
+                'old'           => compact('username', 'role'),
+                'wc_project_id' => $_ENV['WALLETCONNECT_PROJECT_ID'] ?? '',
             ], 'auth');
             return;
         }
@@ -85,10 +87,11 @@ class AuthController
     {
         if (Auth::check()) { header('Location: /dashboard'); exit; }
         View::render('auth/login', [
-            'title'      => 'Sign in',
-            'csrf_token' => Auth::csrfToken(),
-            'errors'     => [],
-            'old'        => [],
+            'title'          => 'Sign in',
+            'csrf_token'     => Auth::csrfToken(),
+            'errors'         => [],
+            'old'            => [],
+            'wc_project_id'  => $_ENV['WALLETCONNECT_PROJECT_ID'] ?? '',
         ], 'auth');
     }
 
@@ -114,10 +117,11 @@ class AuthController
 
         if (!empty($errors)) {
             View::render('auth/login', [
-                'title'      => 'Sign in',
-                'csrf_token' => Auth::csrfToken(),
-                'errors'     => $errors,
-                'old'        => compact('username'),
+                'title'         => 'Sign in',
+                'csrf_token'    => Auth::csrfToken(),
+                'errors'        => $errors,
+                'old'           => compact('username'),
+                'wc_project_id' => $_ENV['WALLETCONNECT_PROJECT_ID'] ?? '',
             ], 'auth');
             return;
         }

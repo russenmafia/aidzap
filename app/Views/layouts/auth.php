@@ -11,6 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/main.css">
 <link rel="stylesheet" href="/assets/css/auth.css">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
 </head>
 <body class="auth-body">
 <div class="auth-wrap">
