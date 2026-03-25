@@ -23,7 +23,7 @@ class AuthController
             'errors'        => [],
             'old'           => [],
             'ref_code'      => $refCode,
-            'wc_project_id' => $_ENV['WALLETCONNECT_PROJECT_ID'] ?? '',
+            'wc_project_id' => self::wcProjectId(),
         ], 'auth');
     }
 
@@ -59,7 +59,7 @@ class AuthController
                 'csrf_token'    => Auth::csrfToken(),
                 'errors'        => $errors,
                 'old'           => compact('username', 'role'),
-                'wc_project_id' => $_ENV['WALLETCONNECT_PROJECT_ID'] ?? '',
+                'wc_project_id' => self::wcProjectId(),
             ], 'auth');
             return;
         }
@@ -91,7 +91,7 @@ class AuthController
             'csrf_token'     => Auth::csrfToken(),
             'errors'         => [],
             'old'            => [],
-            'wc_project_id'  => $_ENV['WALLETCONNECT_PROJECT_ID'] ?? '',
+            'wc_project_id'  => self::wcProjectId(),
         ], 'auth');
     }
 
@@ -121,7 +121,7 @@ class AuthController
                 'csrf_token'    => Auth::csrfToken(),
                 'errors'        => $errors,
                 'old'           => compact('username'),
-                'wc_project_id' => $_ENV['WALLETCONNECT_PROJECT_ID'] ?? '',
+                'wc_project_id' => self::wcProjectId(),
             ], 'auth');
             return;
         }
@@ -148,5 +148,14 @@ class AuthController
             mt_rand(0,0xffff), mt_rand(0,0xffff), mt_rand(0,0xffff),
             mt_rand(0,0x0fff)|0x4000, mt_rand(0,0x3fff)|0x8000,
             mt_rand(0,0xffff), mt_rand(0,0xffff), mt_rand(0,0xffff));
+    }
+
+    private static function wcProjectId(): string
+    {
+        $id = $_ENV['WALLETCONNECT_PROJECT_ID'] ?? '';
+        if ($id === '' && ($_ENV['APP_DEBUG'] ?? 'false') !== 'true') {
+            error_log('WALLETCONNECT_PROJECT_ID is not set. WalletConnect will not work.');
+        }
+        return $id;
     }
 }

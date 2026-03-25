@@ -115,7 +115,7 @@ class AccountController
             'csrf_token'    => Auth::csrfToken(),
             'errors'        => [],
             'success'       => $_GET['saved'] ?? null,
-            'wc_project_id' => $_ENV['WALLETCONNECT_PROJECT_ID'] ?? '',
+            'wc_project_id' => self::wcProjectId(),
         ], 'dashboard');
     }
 
@@ -290,7 +290,16 @@ class AccountController
             'csrf_token'    => Auth::csrfToken(),
             'errors'        => $errors,
             'success'       => null,
-            'wc_project_id' => $_ENV['WALLETCONNECT_PROJECT_ID'] ?? '',
+            'wc_project_id' => self::wcProjectId(),
         ], 'dashboard');
+    }
+
+    private static function wcProjectId(): string
+    {
+        $id = $_ENV['WALLETCONNECT_PROJECT_ID'] ?? '';
+        if ($id === '' && ($_ENV['APP_DEBUG'] ?? 'false') !== 'true') {
+            error_log('WALLETCONNECT_PROJECT_ID is not set. WalletConnect will not work.');
+        }
+        return $id;
     }
 }
