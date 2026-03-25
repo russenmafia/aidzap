@@ -11,6 +11,7 @@ class WalletAuthController
     // ── Nonce anfordern ───────────────────────────────────────────────────
     public function nonce(): void
     {
+        \Core\RateLimit::check('wallet_nonce');
         header('Content-Type: application/json');
         $ip      = $_SERVER['REMOTE_ADDR'] ?? '';
         $ipHash  = hash('sha256', $ip . ($_ENV['APP_SECRET'] ?? ''));
@@ -39,6 +40,7 @@ class WalletAuthController
     // ── Signatur verifizieren + einloggen ─────────────────────────────────
     public function verify(): void
     {
+        \Core\RateLimit::check('wallet_login');
         header('Content-Type: application/json');
 
         $address   = strtolower(trim($_POST['address'] ?? ''));

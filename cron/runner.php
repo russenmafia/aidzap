@@ -29,10 +29,11 @@ if (file_exists($envFile)) {
 $job = $argv[1] ?? 'help';
 
 $jobs = [
-    'daily-stats'    => 'Cron\DailyStatsJob',
-    'budget-reset'   => 'Cron\BudgetResetJob',
-    'fraud-cleanup'  => 'Cron\FraudCleanupJob',
-    'payment-check'  => 'Cron\PaymentCheckJob',
+    'daily-stats'         => 'Cron\DailyStatsJob',
+    'budget-reset'        => 'Cron\BudgetResetJob',
+    'fraud-cleanup'       => 'Cron\FraudCleanupJob',
+    'payment-check'       => 'Cron\PaymentCheckJob',
+    'rate-limit-cleanup'  => 'Cron\RateLimitCleanupJob',
 ];
 
 if ($job === 'help' || !isset($jobs[$job])) {

@@ -28,6 +28,7 @@ class AuthController
 
     public function register(): void
     {
+        \Core\RateLimit::check('register');
         Auth::csrfVerify($_POST['csrf_token'] ?? '');
 
         $username = trim($_POST['username'] ?? '');
@@ -93,6 +94,7 @@ class AuthController
 
     public function login(): void
     {
+        \Core\RateLimit::check('login');
         Auth::csrfVerify($_POST['csrf_token'] ?? '');
 
         $username = trim($_POST['username'] ?? '');

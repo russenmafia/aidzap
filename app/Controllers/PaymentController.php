@@ -51,6 +51,7 @@ class PaymentController
     public function createDeposit(): void
     {
         Auth::require();
+        \Core\RateLimit::check('payment_deposit');
         header('Content-Type: application/json');
 
         $currency  = strtoupper(trim($_POST['currency'] ?? 'BTC'));

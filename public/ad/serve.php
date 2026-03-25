@@ -26,6 +26,8 @@ if (file_exists($envFile)) {
 ini_set('display_errors', '0');
 error_reporting(0);
 
+\Core\RateLimit::check('ad_serve');
+
 // UUID aus URL extrahieren
 // Route: /ad/{uuid} oder serve.php?unit={uuid}
 $uuid = $_GET['unit'] ?? null;

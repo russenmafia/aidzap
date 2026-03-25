@@ -2,6 +2,13 @@
   <h1 class="auth-title"><?= __('auth.login_title') ?></h1>
   <p class="auth-subtitle"><?= __('auth.login_subtitle') ?></p>
 
+  <?php if (!empty($_SESSION['flash_error'])): ?>
+  <div class="flash flash-error">
+    <?= htmlspecialchars($_SESSION['flash_error']) ?>
+    <?php unset($_SESSION['flash_error']); ?>
+  </div>
+  <?php endif; ?>
+
   <?php if (!empty($errors)): ?>
   <div class="alert alert-error">
     <?php foreach ($errors as $e): ?><p><?= htmlspecialchars($e) ?></p><?php endforeach; ?>
