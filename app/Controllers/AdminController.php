@@ -535,4 +535,48 @@ class AdminController
         \Services\FeatureFlag::set($key, $value);
         header('Location: /admin/features?saved=1'); exit;
     }
+
+    // ── Quality Score System ─────────────────────────────────────────────────
+    public function quality(): void
+    {
+        AdminAuth::require();
+        $service  = new \Services\QualityScoreService();
+        $settings = $service->getSettings();
+        View::render('admin/quality', [
+            'title'      => 'Quality Score',
+            'active'     => 'quality',
+            'settings'   => $settings,
+            'csrf_token' => Auth::csrfToken(),
+        ], 'admin');
+    }
+
+    public function saveQuality(): void
+    {
+        AdminAuth::require();
+        Auth::csrfVerify($_POST['csrf_token'] ?? '');
+
+        $service = new \Services\QualityScoreService();
+        $service->saveSettings([
+            'bronze_max_ctr'        => min(1, max(0, (float)($_POST['bronze_max_ctr']        ?? 0.0010))),
+            'silver_max_ctr'        => min(1, max(0, (float)($_POST['silver_max_ctr']        ?? 0.0030))),
+            'gold_max_ctr'          => min(1, max(0, (float)($_POST['gold_max_ctr']          ?? 0.0080))),
+            'bronze_share'          => min(100, max(0, (float)($_POST['bronze_share']         ?? 60))),
+            'silver_share'          => min(100, max(0, (float)($_POST['silver_share']         ?? 70))),
+            'gold_share'            => min(100, max(0, (float)($_POST['gold_share']           ?? 80))),
+            'platinum_share'        => min(100, max(0, (float)($_POST['platinum_share']       ?? 85))),
+            'ref_multiplier_0'      => min(10,  max(0, (float)($_POST['ref_multiplier_0']     ?? 0))),
+            'ref_multiplier_1'      => min(10,  max(0, (float)($_POST['ref_multiplier_1']     ?? 0.5))),
+            'ref_multiplier_2'      => min(10,  max(0, (float)($_POST['ref_multiplier_2']     ?? 1.0))),
+            'ref_multiplier_3plus'  => min(10,  max(0, (float)($_POST['ref_multiplier_3plus'] ?? 1.5))),
+            'min_own_level'         => in_array($_POST['min_own_level'] ?? '', ['bronze','silver','gold','platinum'], true)
+                                        ? $_POST['min_own_level']
+                                        : 'silver',
+            'concentration_cap_pct' => min(100, max(1, (int)($_POST['concentration_cap_pct'] ?? 50))),
+            'cooling_period_days'   => min(365, max(0, (int)($_POST['cooling_period_days']   ?? 14))),
+            'activity_window_days'  => min(365, max(1, (int)($_POST['activity_window_days']  ?? 30))),
+            'max_fraud_score'       => min(1,   max(0, (float)($_POST['max_fraud_score']     ?? 0.75))),
+        ]);
+
+        header('Location: /admin/quality?saved=1'); exit;
+    }
 }

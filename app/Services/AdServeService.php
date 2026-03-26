@@ -71,7 +71,8 @@ class AdServeService
         $stmt = $this->db->prepare('
             SELECT u.id, u.uuid, u.user_id, u.name, u.size, u.type,
                    u.status, u.category_id, u.fallback_html,
-                   u.allowed_categories, u.blocked_categories, u.floor_price
+                   u.allowed_categories, u.blocked_categories, u.floor_price,
+                   u.revenue_share
             FROM ad_units u
             WHERE u.uuid = ? AND u.status = "active"
             LIMIT 1
@@ -228,9 +229,10 @@ class AdServeService
     {
         if ($grossCost <= 0) return;
 
-        // 80% an Publisher, 20% Plattform-Fee
-        $publisherShare = round($grossCost * 0.80, 8);
-        $today = date('Y-m-d');
+        // Use unit's dynamic revenue share (set by quality score system), default 60%
+        $sharePct       = max(0, min(100, (float)($unit['revenue_share'] ?? 60.00)));
+        $publisherShare = round($grossCost * ($sharePct / 100), 8);
+        $today          = date('Y-m-d');
 
         $this->db->prepare('
             INSERT INTO earnings (user_id, unit_id, date, currency, amount, impressions, clicks)

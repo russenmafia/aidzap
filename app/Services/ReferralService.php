@@ -92,18 +92,29 @@ class ReferralService
         $settings = $this->getSettings();
         if (!$settings['enabled'] || !$settings['on_earnings'] || $amount <= 0) return;
 
-        $pcts = [1 => $settings['level1_pct'], 2 => $settings['level2_pct'], 3 => $settings['level3_pct']];
+        $basePcts = [1 => $settings['level1_pct'], 2 => $settings['level2_pct'], 3 => $settings['level3_pct']];
 
         $stmt = $this->db->prepare('SELECT user_id, level FROM referrals WHERE referred_by = ?');
         $stmt->execute([$publisherId]);
 
         foreach ($stmt->fetchAll() as $row) {
-            $pct        = (float)$pcts[$row['level']];
-            $commission = round($amount * $pct / 100, 8);
+            $referrerId = (int)$row['user_id'];
+            $basePct    = (float)$basePcts[$row['level']];
+
+            // Apply quality multiplier for level-1 referrers
+            $effectivePct = $basePct;
+            if ((int)$row['level'] === 1) {
+                $mStmt = $this->db->prepare('SELECT ref_multiplier FROM users WHERE id = ? LIMIT 1');
+                $mStmt->execute([$referrerId]);
+                $multiplier   = (float)($mStmt->fetchColumn() ?: 0);
+                $effectivePct = round($basePct * $multiplier, 4);
+            }
+
+            $commission = round($amount * $effectivePct / 100, 8);
             if ($commission <= 0) continue;
 
-            $this->creditCommission((int)$row['user_id'], $publisherId, $row['level'],
-                'earnings', $amount, $pct, $commission);
+            $this->creditCommission($referrerId, $publisherId, $row['level'],
+                'earnings', $amount, $effectivePct, $commission);
         }
     }
 
@@ -113,10 +124,31 @@ class ReferralService
         $settings = $this->getSettings();
         if (!$settings['enabled'] || !$settings['on_spend'] || $amount <= 0) return;
 
-        $pcts = [1 => $settings['level1_pct'], 2 => $settings['level2_pct'], 3 => $settings['level3_pct']];
+        $basePcts = [1 => $settings['level1_pct'], 2 => $settings['level2_pct'], 3 => $settings['level3_pct']];
 
         $stmt = $this->db->prepare('SELECT user_id, level FROM referrals WHERE referred_by = ?');
         $stmt->execute([$advertiserId]);
+
+        foreach ($stmt->fetchAll() as $row) {
+            $referrerId = (int)$row['user_id'];
+            $basePct    = (float)$basePcts[$row['level']];
+
+            // Apply quality multiplier for level-1 referrers
+            $effectivePct = $basePct;
+            if ((int)$row['level'] === 1) {
+                $mStmt = $this->db->prepare('SELECT ref_multiplier FROM users WHERE id = ? LIMIT 1');
+                $mStmt->execute([$referrerId]);
+                $multiplier   = (float)($mStmt->fetchColumn() ?: 0);
+                $effectivePct = round($basePct * $multiplier, 4);
+            }
+
+            $commission = round($amount * $effectivePct / 100, 8);
+            if ($commission <= 0) continue;
+
+            $this->creditCommission($referrerId, $advertiserId, $row['level'],
+                'spend', $amount, $effectivePct, $commission);
+        }
+    }
 
         foreach ($stmt->fetchAll() as $row) {
             $pct        = (float)$pcts[$row['level']];

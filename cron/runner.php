@@ -34,6 +34,7 @@ $jobs = [
     'fraud-cleanup'       => 'Cron\FraudCleanupJob',
     'payment-check'       => 'Cron\PaymentCheckJob',
     'rate-limit-cleanup'  => 'Cron\RateLimitCleanupJob',
+    'quality-score'       => 'Cron\QualityScoreJob',
 ];
 
 if ($job === 'help' || !isset($jobs[$job])) {

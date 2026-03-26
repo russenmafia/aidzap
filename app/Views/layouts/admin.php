@@ -68,6 +68,9 @@ $active = $active ?? '';
       <a href="/admin/features" class="sb-item <?= $active === 'features' ? 'active' : '' ?>">
         <span class="sb-icon">&#9881;</span> Feature Flags
       </a>
+      <a href="/admin/quality" class="sb-item <?= $active === 'quality' ? 'active' : '' ?>">
+        <span class="sb-icon">&#11088;</span> Quality Score
+      </a>
 
       <div class="sb-section"><?= __('admin.navigation') ?></div>
       <a href="/dashboard" class="sb-item">

@@ -94,6 +94,10 @@ $router->get('/admin/crons/run-http', [\Controllers\AdminController::class, 'run
 $router->get('/admin/features',         [\Controllers\AdminController::class, 'features']);
 $router->post('/admin/features/toggle', [\Controllers\AdminController::class, 'toggleFeature']);
 
+// Quality Score Admin
+$router->get('/admin/quality',          [\Controllers\AdminController::class, 'quality']);
+$router->post('/admin/quality/save',    [\Controllers\AdminController::class, 'saveQuality']);
+
 // Account
 $router->get('/account/wallets',                   [\Controllers\AccountController::class, 'wallets']);
 $router->post('/account/wallets/add',              [\Controllers\AccountController::class, 'addWallet']);
