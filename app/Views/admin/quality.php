@@ -19,7 +19,7 @@ $levelCounts = $db->query('
     SELECT quality_level, COUNT(*) AS cnt, AVG(revenue_share) AS avg_share
     FROM ad_units WHERE status = "active"
     GROUP BY quality_level
-')->fetchAll(\PDO::FETCH_KEY_PAIR) ?: [];
+')->fetchAll() ?: [];
 
 $levelRows = $db->query('
     SELECT quality_level,
