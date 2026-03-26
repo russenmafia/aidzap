@@ -14,12 +14,20 @@ class Auth
         $_SESSION['user_id']  = $userId;
         $_SESSION['login_at'] = time();
         if ($remember) {
-            session_set_cookie_params([
-                'lifetime' => 30 * 86400,
-                'secure'   => true,
-                'httponly' => true,
-                'samesite' => 'Strict',
-            ]);
+            // Extend cookie lifetime via setcookie (session already started)
+            $cookieParams = session_get_cookie_params();
+            setcookie(
+                session_name(),
+                session_id(),
+                [
+                    'expires'  => time() + 30 * 86400,
+                    'path'     => $cookieParams['path'],
+                    'domain'   => $cookieParams['domain'],
+                    'secure'   => true,
+                    'httponly' => true,
+                    'samesite' => 'Strict',
+                ]
+            );
         }
     }
 
