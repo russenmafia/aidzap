@@ -51,7 +51,7 @@
   <ul class="nav-links">
     <li><a href="/advertiser"><?= __('nav.advertiser') ?></a></li>
     <li><a href="/publisher"><?= __('nav.publisher') ?></a></li>
-    <li><a href="/pricing"><?= __('nav.pricing') ?></a></li>
+    <li><a href="/publisher-quality"><?= __('nav.quality') ?></a></li>
     <li><a href="/faq"><?= __('nav.faq') ?></a></li>
   </ul>
   <div class="nav-cta">
@@ -73,6 +73,13 @@
 <footer class="footer">
   <div class="footer-inner">
     <span class="logo">AID<span>ZAP</span></span>
+    <div class="footer-links">
+      <a href="/terms"><?= __('footer.terms') ?></a>
+      <a href="/privacy"><?= __('footer.privacy') ?></a>
+      <a href="/impressum"><?= __('footer.impressum') ?></a>
+      <a href="/faq">FAQ</a>
+      <a href="/publisher-quality"><?= __('footer.quality') ?></a>
+    </div>
     <span class="footer-copy"><?= __('footer.tagline') ?></span>
   </div>
 </footer>

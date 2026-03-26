@@ -64,6 +64,7 @@ $router->post('/admin/faq/:id/delete',        [\Controllers\AdminController::cla
 $router->get('/terms',                        [\Controllers\PageController::class, 'legal']);
 $router->get('/privacy',                      [\Controllers\PageController::class, 'legal']);
 $router->get('/impressum',                    [\Controllers\PageController::class, 'legal']);
+$router->get('/publisher-quality', [\Controllers\PageController::class, 'publisherQuality']);
 $router->get('/faq',                          [\Controllers\PageController::class, 'faq']);
 
 // Banner Routes

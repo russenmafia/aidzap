@@ -40,4 +40,14 @@ class PageController
             'items' => $items,
         ]);
     }
+
+    public function publisherQuality(): void
+    {
+        $db = Database::getInstance();
+        $settings = $db->query('SELECT * FROM quality_settings LIMIT 1')->fetch() ?: [];
+        View::render('pages/publisher-quality', [
+            'title'    => 'Publisher Quality Program – aidzap.com',
+            'settings' => $settings,
+        ]);
+    }
 }
