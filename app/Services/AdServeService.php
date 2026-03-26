@@ -10,14 +10,19 @@ class AdServeService
     private \PDO $db;
     private string $ip;
     private string $ipHash;
-    private ?string $country = null;
+    private string $country  = '';
+    private string $language = '';
+    private string $device   = '';
 
     public function __construct()
     {
-        $this->db      = Database::getInstance();
-        $this->ip      = $this->getClientIp();
-        $this->ipHash  = hash('sha256', $this->ip . ($_ENV['APP_SECRET'] ?? ''));
-        $this->country = $this->detectCountry();
+        $this->db       = Database::getInstance();
+        $this->ip       = $this->getClientIp();
+        $this->ipHash   = hash('sha256', $this->ip . ($_ENV['APP_SECRET'] ?? ''));
+        $visitor        = GeoService::detect();
+        $this->country  = $visitor['country'];
+        $this->language = $visitor['language'];
+        $this->device   = $visitor['device'];
     }
 
     public function serve(string $unitUuid): void
@@ -84,6 +89,7 @@ class AdServeService
             SELECT b.id, b.uuid, b.html, b.size,
                    c.id AS campaign_id, c.pricing_model, c.bid_amount,
                    c.currency, c.target_countries, c.target_categories,
+                   c.target_languages, c.target_devices,
                    c.user_id AS advertiser_id,
                    b.user_id AS banner_user_id
             FROM ad_banners b
@@ -115,7 +121,11 @@ class AdServeService
 
         // Geo-Filter anwenden
         foreach ($candidates as $candidate) {
-            if ($this->matchesGeo($candidate) && $this->matchesCategory($candidate, $unit)) {
+            if ($this->matchesGeo($candidate)
+                && $this->matchesLanguage($candidate)
+                && $this->matchesDevice($candidate)
+                && $this->matchesCategory($candidate, $unit)
+            ) {
                 $candidate['cost'] = $this->calculateCost($candidate);
                 return $candidate;
             }
@@ -126,13 +136,37 @@ class AdServeService
 
     private function matchesGeo(array $banner): bool
     {
+        if (!FeatureFlag::isActive('targeting_geo')) return true;
         if (empty($banner['target_countries'])) return true;
-        if (!$this->country) return true;
+        if ($this->country === '') return true;
 
         $countries = json_decode($banner['target_countries'], true) ?? [];
         if (empty($countries)) return true;
 
         return in_array(strtoupper($this->country), array_map('strtoupper', $countries), true);
+    }
+
+    private function matchesLanguage(array $banner): bool
+    {
+        if (!FeatureFlag::isActive('targeting_language')) return true;
+        if (empty($banner['target_languages'])) return true;
+        if ($this->language === '') return true;
+
+        $languages = json_decode($banner['target_languages'], true) ?? [];
+        if (empty($languages)) return true;
+
+        return in_array($this->language, $languages, true);
+    }
+
+    private function matchesDevice(array $banner): bool
+    {
+        if (!FeatureFlag::isActive('targeting_device')) return true;
+        if (empty($banner['target_devices'])) return true;
+
+        $devices = json_decode($banner['target_devices'], true) ?? [];
+        if (empty($devices)) return true;
+
+        return in_array($this->device, $devices, true);
     }
 
     private function matchesCategory(array $banner, array $unit): bool
@@ -161,15 +195,17 @@ class AdServeService
 
         $this->db->prepare('
             INSERT INTO impressions
-                (banner_id, unit_id, campaign_id, ip_hash, country,
+                (banner_id, unit_id, campaign_id, ip_hash, country, language, device,
                  referer, user_agent_hash, fraud_score, is_fraud, cost, created_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?, NOW())
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?, NOW())
         ')->execute([
             $banner['id'] ?? 0,
             $unit['id'],
             $banner['campaign_id'] ?? 0,
             $this->ipHash,
-            $this->country,
+            $this->country  ?: null,
+            $this->language ?: null,
+            $this->device   ?: null,
             $referer,
             $uaHash,
             $fraudScore,
@@ -270,12 +306,5 @@ class AdServeService
         return '0.0.0.0';
     }
 
-    private function detectCountry(): ?string
-    {
-        // Cloudflare setzt CF-IPCountry Header
-        if (!empty($_SERVER['HTTP_CF_IPCOUNTRY'])) {
-            return strtoupper(substr($_SERVER['HTTP_CF_IPCOUNTRY'], 0, 2));
-        }
-        return null;
-    }
 }
+

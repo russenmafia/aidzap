@@ -8,6 +8,10 @@ storage/cache/*
 !storage/logs/.gitkeep
 !storage/cache/.gitkeep
 
+# GeoIP database (download separately from MaxMind)
+geoip/GeoLite2-Country.mmdb
+geoip/GeoLite2-City.mmdb
+
 # OS
 .DS_Store
 Thumbs.db

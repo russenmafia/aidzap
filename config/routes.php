@@ -90,6 +90,10 @@ $router->get('/admin/crons',          [\Controllers\AdminController::class, 'cro
 $router->post('/admin/crons/run',     [\Controllers\AdminController::class, 'runCron']);
 $router->get('/admin/crons/run-http', [\Controllers\AdminController::class, 'runCronHttp']);
 
+// Feature Flags Admin
+$router->get('/admin/features',         [\Controllers\AdminController::class, 'features']);
+$router->post('/admin/features/toggle', [\Controllers\AdminController::class, 'toggleFeature']);
+
 // Account
 $router->get('/account/wallets',                   [\Controllers\AccountController::class, 'wallets']);
 $router->post('/account/wallets/add',              [\Controllers\AccountController::class, 'addWallet']);

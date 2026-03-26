@@ -53,13 +53,16 @@ class CampaignController
         $categories = $db->query('SELECT * FROM ad_categories ORDER BY name')->fetchAll();
 
         View::render('dashboard/campaign-create', [
-            'title'      => 'New Campaign',
-            'active'     => 'campaigns',
-            'categories' => $categories,
-            'balance'    => $balance,
-            'csrf_token' => Auth::csrfToken(),
-            'errors'     => [],
-            'old'        => [],
+            'title'           => 'New Campaign',
+            'active'          => 'campaigns',
+            'categories'      => $categories,
+            'balance'         => $balance,
+            'csrf_token'      => Auth::csrfToken(),
+            'errors'          => [],
+            'old'             => [],
+            'targetCountries' => [],
+            'targetLanguages' => [],
+            'targetDevices'   => [],
         ], 'dashboard');
     }
 
@@ -83,6 +86,15 @@ class CampaignController
         $currency     = 'BTC';
         $startsAt     = $_POST['starts_at'] ?? null;
         $endsAt       = $_POST['ends_at'] ?? null;
+
+        // Targeting
+        $targetCountries = array_values(array_filter((array)($_POST['target_countries'] ?? []), fn($c) => array_key_exists($c, COUNTRIES)));
+        $targetLanguages = array_values(array_filter((array)($_POST['target_languages'] ?? []), fn($l) => array_key_exists($l, LANGUAGES)));
+        $targetDevices   = array_values(array_filter((array)($_POST['target_devices']   ?? []), fn($d) => in_array($d, DEVICES, true)));
+
+        $targetCountriesJson = !empty($targetCountries) ? json_encode($targetCountries) : null;
+        $targetLanguagesJson = !empty($targetLanguages) ? json_encode($targetLanguages) : null;
+        $targetDevicesJson   = !empty($targetDevices)   ? json_encode($targetDevices)   : null;
 
         // Validierung
         if (strlen($name) < 2)                    $errors[] = 'Campaign name required.';
@@ -108,13 +120,16 @@ class CampaignController
             $categories = $db->query('SELECT * FROM ad_categories ORDER BY name')->fetchAll();
             $balStmt->execute([$userId]);
             View::render('dashboard/campaign-create', [
-                'title'      => 'New Campaign',
-                'active'     => 'campaigns',
-                'categories' => $categories,
-                'balance'    => (float)$balStmt->fetchColumn(),
-                'csrf_token' => Auth::csrfToken(),
-                'errors'     => $errors,
-                'old'        => $_POST,
+                'title'           => 'New Campaign',
+                'active'          => 'campaigns',
+                'categories'      => $categories,
+                'balance'         => (float)$balStmt->fetchColumn(),
+                'csrf_token'      => Auth::csrfToken(),
+                'errors'          => $errors,
+                'old'             => $_POST,
+                'targetCountries' => $targetCountries,
+                'targetLanguages' => $targetLanguages,
+                'targetDevices'   => $targetDevices,
             ], 'dashboard');
             return;
         }
@@ -124,11 +139,13 @@ class CampaignController
             INSERT INTO campaigns
                 (uuid, user_id, name, status, pricing_model, bid_amount,
                  daily_budget, total_budget, spent, currency,
-                 target_url, starts_at, ends_at, created_at)
-            VALUES (?,?,?,?,?,?,?,?,0,?,?,?,?, NOW())
+                 target_url, target_countries, target_languages, target_devices,
+                 starts_at, ends_at, created_at)
+            VALUES (?,?,?,?,?,?,?,?,0,?,?,?,?,?,?,?, NOW())
         ')->execute([
             $uuid, $userId, $name, 'draft', $pricingModel, $bidAmount,
             $dailyBudget, $totalBudget ?: null, $currency, $targetUrl,
+            $targetCountriesJson, $targetLanguagesJson, $targetDevicesJson,
             $startsAt ?: null, $endsAt ?: null,
         ]);
 
@@ -161,13 +178,16 @@ class CampaignController
         $balance = (float)$balStmt->fetchColumn();
 
         View::render('dashboard/campaign-edit', [
-            'title'      => 'Edit Campaign',
-            'active'     => 'campaigns',
-            'campaign'   => $campaign,
-            'categories' => $categories,
-            'balance'    => $balance,
-            'csrf_token' => Auth::csrfToken(),
-            'errors'     => [],
+            'title'           => 'Edit Campaign',
+            'active'          => 'campaigns',
+            'campaign'        => $campaign,
+            'categories'      => $categories,
+            'balance'         => $balance,
+            'csrf_token'      => Auth::csrfToken(),
+            'errors'          => [],
+            'targetCountries' => json_decode($campaign['target_countries'] ?? 'null', true) ?? [],
+            'targetLanguages' => json_decode($campaign['target_languages'] ?? 'null', true) ?? [],
+            'targetDevices'   => json_decode($campaign['target_devices']   ?? 'null', true) ?? [],
         ], 'dashboard');
     }
 
@@ -194,6 +214,15 @@ class CampaignController
         $endsAt      = $_POST['ends_at'] ?? null;
         $status      = $_POST['status'] ?? $campaign['status'];
 
+        // Targeting
+        $targetCountries = array_values(array_filter((array)($_POST['target_countries'] ?? []), fn($c) => array_key_exists($c, COUNTRIES)));
+        $targetLanguages = array_values(array_filter((array)($_POST['target_languages'] ?? []), fn($l) => array_key_exists($l, LANGUAGES)));
+        $targetDevices   = array_values(array_filter((array)($_POST['target_devices']   ?? []), fn($d) => in_array($d, DEVICES, true)));
+
+        $targetCountriesJson = !empty($targetCountries) ? json_encode($targetCountries) : null;
+        $targetLanguagesJson = !empty($targetLanguages) ? json_encode($targetLanguages) : null;
+        $targetDevicesJson   = !empty($targetDevices)   ? json_encode($targetDevices)   : null;
+
         if (strlen($name) < 2)                         $errors[] = 'Campaign name required.';
         if (!filter_var($targetUrl, FILTER_VALIDATE_URL)) $errors[] = 'Valid target URL required.';
         if ($bidAmount <= 0)                           $errors[] = 'Bid amount must be greater than 0.';
@@ -214,13 +243,16 @@ class CampaignController
         if (!empty($errors)) {
             $categories = $db->query('SELECT * FROM ad_categories ORDER BY name')->fetchAll();
             View::render('dashboard/campaign-edit', [
-                'title'      => 'Edit Campaign',
-                'active'     => 'campaigns',
-                'campaign'   => array_merge($campaign, $_POST),
-                'categories' => $categories,
-                'balance'    => 0,
-                'csrf_token' => Auth::csrfToken(),
-                'errors'     => $errors,
+                'title'           => 'Edit Campaign',
+                'active'          => 'campaigns',
+                'campaign'        => array_merge($campaign, $_POST),
+                'categories'      => $categories,
+                'balance'         => 0,
+                'csrf_token'      => Auth::csrfToken(),
+                'errors'          => $errors,
+                'targetCountries' => $targetCountries,
+                'targetLanguages' => $targetLanguages,
+                'targetDevices'   => $targetDevices,
             ], 'dashboard');
             return;
         }
@@ -230,18 +262,22 @@ class CampaignController
 
         $db->prepare('
             UPDATE campaigns SET
-                name         = ?,
-                target_url   = ?,
-                bid_amount   = ?,
-                daily_budget = ?,
-                total_budget = ?,
-                starts_at    = ?,
-                ends_at      = ?,
-                status       = ?
+                name             = ?,
+                target_url       = ?,
+                bid_amount       = ?,
+                daily_budget     = ?,
+                total_budget     = ?,
+                target_countries = ?,
+                target_languages = ?,
+                target_devices   = ?,
+                starts_at        = ?,
+                ends_at          = ?,
+                status           = ?
             WHERE uuid = ? AND user_id = ?
         ')->execute([
             $name, $targetUrl, $bidAmount, $dailyBudget,
             $totalBudget ?: null,
+            $targetCountriesJson, $targetLanguagesJson, $targetDevicesJson,
             $startsAt ?: null,
             $endsAt   ?: null,
             $status,

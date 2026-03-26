@@ -506,4 +506,33 @@ class AdminController
         if (function_exists('opcache_reset')) opcache_reset();
         header('Location: /admin/system?cleared=1'); exit;
     }
+
+    // ── Feature Flags ────────────────────────────────────────────────────────
+    public function features(): void
+    {
+        AdminAuth::require();
+        $flags = \Services\FeatureFlag::all();
+        View::render('admin/features', [
+            'title'      => 'Feature Flags',
+            'active'     => 'features',
+            'flags'      => $flags,
+            'csrf_token' => Auth::csrfToken(),
+        ], 'admin');
+    }
+
+    public function toggleFeature(): void
+    {
+        AdminAuth::require();
+        Auth::csrfVerify($_POST['csrf_token'] ?? '');
+
+        $key   = $_POST['flag_key'] ?? '';
+        $value = (bool)(int)($_POST['value'] ?? 0);
+
+        if (!in_array($key, ['targeting_geo', 'targeting_language', 'targeting_device'], true)) {
+            header('Location: /admin/features'); exit;
+        }
+
+        \Services\FeatureFlag::set($key, $value);
+        header('Location: /admin/features?saved=1'); exit;
+    }
 }

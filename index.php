@@ -8,6 +8,7 @@ define('STORAGE_PATH',BASE_PATH . '/storage');
 
 if (file_exists(BASE_PATH . "/vendor/autoload.php")) require_once BASE_PATH . "/vendor/autoload.php";
 require_once BASE_PATH . "/vendor/kornrunner/keccak/src/Keccak.php";
+require_once APP_PATH . "/Core/constants.php";
 require_once APP_PATH . "/Core/Lang.php";
 require_once APP_PATH . "/Core/helpers.php";
 // Autoloader

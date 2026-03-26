@@ -90,7 +90,60 @@
 
   <!-- Status -->
   <div class="form-section">
-    <div class="form-section-title"><span class="form-step">4</span> Status</div>
+    <div class="form-section-title"><span class="form-step">4</span> Targeting
+      <span class="form-section-opt">optional</span>
+    </div>
+    <div class="form-grid">
+
+      <!-- Countries -->
+      <div class="field full">
+        <label>Countries <span style="color:rgba(255,255,255,0.3);font-weight:400;font-size:11px">(leave empty = worldwide)</span></label>
+        <select name="target_countries[]" multiple class="targeting-select" style="height:120px">
+          <?php foreach (COUNTRIES as $code => $cname): ?>
+          <option value="<?= $code ?>"
+            <?= in_array($code, $targetCountries) ? 'selected' : '' ?>>
+            <?= htmlspecialchars($cname) ?> (<?= $code ?>)
+          </option>
+          <?php endforeach; ?>
+        </select>
+        <span class="field-hint">Hold Ctrl/Cmd to select multiple. Empty = worldwide.</span>
+      </div>
+
+      <!-- Languages -->
+      <div class="field full">
+        <label>Languages <span style="color:rgba(255,255,255,0.3);font-weight:400;font-size:11px">(leave empty = all)</span></label>
+        <select name="target_languages[]" multiple class="targeting-select" style="height:100px">
+          <?php foreach (LANGUAGES as $code => $lname): ?>
+          <option value="<?= $code ?>"
+            <?= in_array($code, $targetLanguages) ? 'selected' : '' ?>>
+            <?= htmlspecialchars($lname) ?> (<?= $code ?>)
+          </option>
+          <?php endforeach; ?>
+        </select>
+        <span class="field-hint">Matches browser language. Empty = all languages.</span>
+      </div>
+
+      <!-- Devices -->
+      <div class="field full">
+        <label>Devices <span style="color:rgba(255,255,255,0.3);font-weight:400;font-size:11px">(leave all unchecked = all)</span></label>
+        <div style="display:flex;gap:12px;margin-top:8px">
+          <?php foreach (['desktop' => '&#x1F5A5; Desktop', 'mobile' => '&#x1F4F1; Mobile', 'tablet' => '&#x1F4DF; Tablet'] as $val => $dlabel): ?>
+          <label class="checkbox-label" style="display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="checkbox" name="target_devices[]" value="<?= $val ?>"
+              <?= in_array($val, $targetDevices) ? 'checked' : '' ?>>
+            <span><?= $dlabel ?></span>
+          </label>
+          <?php endforeach; ?>
+        </div>
+        <span class="field-hint">Detected via User-Agent. Leave unchecked for all devices.</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div class="form-section">
+    <div class="form-section-title"><span class="form-step">5</span> Status</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
       <?php foreach ([
         'draft'  => ['gray',   'Draft'],
