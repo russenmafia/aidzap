@@ -84,6 +84,22 @@
       'schedule_hr' => 'Alle 5 Minuten',
       'cron_cmd'    => "*/5 * * * * {$phpBin} {$cronDir} payment-check >> {$logFile} 2>&1",
     ],
+    [
+      'name'        => 'quality-score',
+      'label'       => 'Quality Score',
+      'desc'        => 'Berechnet täglich Quality Level und Revenue Share pro Ad Unit + Referral Multiplier.',
+      'schedule'    => '0 4 * * *',
+      'schedule_hr' => 'Täglich 04:00 Uhr',
+      'cron_cmd'    => "0 4 * * * {$phpBin} {$cronDir} quality-score >> {$logFile} 2>&1",
+    ],
+    [
+      'name'        => 'geoip-update',
+      'label'       => 'GeoIP Update',
+      'desc'        => 'Aktualisiert die MaxMind GeoLite2-Country Datenbank (Intervall konfigurierbar).',
+      'schedule'    => '30 3 * * *',
+      'schedule_hr' => 'Täglich 03:30 Uhr',
+      'cron_cmd'    => "30 3 * * * {$phpBin} {$cronDir} geoip-update >> {$logFile} 2>&1",
+    ],
   ];
   ?>
 

@@ -455,7 +455,7 @@ class AdminController
     {
         AdminAuth::require();
         $job     = $_POST['job'] ?? '';
-        $allowed = ['daily-stats','budget-reset','fraud-cleanup','payment-check'];
+        $allowed = ['daily-stats','budget-reset','fraud-cleanup','payment-check','quality-score','geoip-update'];
 
         if (!in_array($job, $allowed, true)) {
             header('Location: /admin/crons'); exit;
@@ -479,7 +479,7 @@ class AdminController
         }
 
         $job     = $_GET['job'] ?? '';
-        $allowed = ['daily-stats','budget-reset','fraud-cleanup','payment-check'];
+        $allowed = ['daily-stats','budget-reset','fraud-cleanup','payment-check','quality-score','geoip-update'];
         if (!in_array($job, $allowed, true)) {
             http_response_code(400); echo 'Invalid job'; return;
         }
