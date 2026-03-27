@@ -46,7 +46,7 @@ $totalUsers       = (int)$db->query('SELECT COUNT(*) FROM users WHERE referred_b
       <!-- Enable/Disable -->
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;padding:16px;background:#080c10;border-radius:10px;border:0.5px solid rgba(255,255,255,0.08)">
         <label class="checkbox-label" style="font-size:14px;color:#fff">
-          <input type="checkbox" name="enabled" value="1" <?= $settings['enabled'] ? 'checked' : '' ?> style="accent-color:#3ecf8e;width:16px;height:16px">
+          <input type="checkbox" name="enabled" value="1" <?= $settings['is_active'] ? 'checked' : '' ?> style="accent-color:#3ecf8e;width:16px;height:16px">
           <span>Referral system enabled</span>
         </label>
       </div>
@@ -86,11 +86,11 @@ $totalUsers       = (int)$db->query('SELECT COUNT(*) FROM users WHERE referred_b
         <div style="font-size:13px;font-weight:500;color:rgba(255,255,255,0.5);margin-bottom:16px;letter-spacing:.06em;text-transform:uppercase">Apply commissions on</div>
         <div style="display:flex;gap:20px">
           <label class="checkbox-label">
-            <input type="checkbox" name="on_earnings" value="1" <?= $settings['on_earnings'] ? 'checked' : '' ?> style="accent-color:#3ecf8e">
+            <input type="checkbox" name="on_earnings" value="1" <?= 1 ? 'checked' : '' ?> style="accent-color:#3ecf8e">
             <span>Publisher earnings</span>
           </label>
           <label class="checkbox-label">
-            <input type="checkbox" name="on_spend" value="1" <?= $settings['on_spend'] ? 'checked' : '' ?> style="accent-color:#3ecf8e">
+            <input type="checkbox" name="on_spend" value="1" <?= 1 ? 'checked' : '' ?> style="accent-color:#3ecf8e">
             <span>Advertiser spend</span>
           </label>
         </div>
@@ -102,7 +102,7 @@ $totalUsers       = (int)$db->query('SELECT COUNT(*) FROM users WHERE referred_b
         <div class="field" style="max-width:200px">
           <label>Bonus per new user (BTC)</label>
           <input type="number" name="signup_bonus" step="0.00000001" min="0"
-                 value="<?= htmlspecialchars($settings['signup_bonus']) ?>"
+                 value="<?= htmlspecialchars($settings['signup_bonus_amount']) ?>"
                  placeholder="0.00000000">
           <span class="field-hint">0 = disabled</span>
         </div>
@@ -144,7 +144,7 @@ $totalUsers       = (int)$db->query('SELECT COUNT(*) FROM users WHERE referred_b
            COUNT(r.id) AS referral_count,
            COALESCE(SUM(re.commission),0) AS total_commission
     FROM users u
-    LEFT JOIN referrals r ON r.referrer_id = u.id
+    LEFT JOIN referrals r ON r.user_id = u.id
     LEFT JOIN referral_earnings re ON re.user_id = u.id
     GROUP BY u.id
     HAVING referral_count > 0

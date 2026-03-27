@@ -65,6 +65,9 @@ $active = $active ?? '';
       <a href="/admin/crons" class="sb-item <?= $active === 'crons' ? 'active' : '' ?>">
         <span class="sb-icon">&#9680;</span> <?= __('admin.cron_jobs') ?>
       </a>
+            <a href="/admin/referrals" class="sb-item <?= $active === 'referrals' ? 'active' : '' ?>">
+        <span class="sb-icon">&#128279;</span> Referrals
+      </a>
       <a href="/admin/features" class="sb-item <?= $active === 'features' ? 'active' : '' ?>">
         <span class="sb-icon">&#9881;</span> Feature Flags
       </a>
