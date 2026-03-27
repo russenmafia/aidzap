@@ -300,7 +300,7 @@ class BannerController
             default      => 'jpg'
         };
         $filename = bin2hex(random_bytes(16)) . '.' . $ext;
-        $destDir  = BASE_PATH . '/public/uploads/banners/';
+        $destDir  = BASE_PATH . '/uploads/banners/';
         $destPath = $destDir . $filename;
 
         if (!is_dir($destDir)) mkdir($destDir, 0755, true);

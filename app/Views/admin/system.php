@@ -94,7 +94,7 @@ $gitCommit  = trim(shell_exec('cd ' . BASE_PATH . ' && git log -1 --format="%h %
 $gitDate    = trim(shell_exec('cd ' . BASE_PATH . ' && git log -1 --format="%ci" 2>/dev/null') ?? '');
 
 // Upload-Ordner
-$uploadDir  = BASE_PATH . '/public/uploads/banners/';
+$uploadDir  = BASE_PATH . '/uploads/banners/';
 $uploadFiles= is_dir($uploadDir) ? count(glob($uploadDir . '*')) : 0;
 $uploadSize = 0;
 if (is_dir($uploadDir)) {
