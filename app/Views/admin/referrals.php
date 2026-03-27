@@ -130,6 +130,31 @@ $totalUsers       = (int)$db->query('SELECT COUNT(*) FROM users WHERE referred_b
         </div>
       </div>
 
+      <!-- Impression Throttling -->
+      <div style="margin-bottom:24px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:14px">
+          Impression Throttling
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;align-items:start">
+          <div class="field">
+            <label>Interval (minutes)</label>
+            <input type="number" name="impression_interval_min" min="1" max="1440"
+                   value="<?= (int)($settings['impression_interval_min'] ?? 60) ?>">
+            <span class="field-hint">
+              Min. minutes between counted impressions per IP per ad unit.<br>
+              Default: 60 min. Range: 1-1440 (= 24h).
+            </span>
+          </div>
+          <div style="background:rgba(62,207,142,0.04);border:0.5px solid rgba(62,207,142,0.15);border-radius:12px;padding:16px;font-size:13px;color:rgba(255,255,255,0.5);line-height:1.6">
+            <strong style="color:#3ecf8e">How it works:</strong><br>
+            If the same IP visits an ad unit within this interval, the impression
+            is shown but <strong style="color:#fff">not counted</strong> - no budget
+            deducted, no earnings credited. This prevents artificial inflation of
+            impression counts.
+          </div>
+        </div>
+      </div>
+
       <button type="submit" class="btn-approve">Save Settings →</button>
     </form>
   </div>
