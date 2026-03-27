@@ -1,12 +1,9 @@
 <?php
 declare(strict_types=1);
+defined('BASE_PATH') || define('BASE_PATH', dirname(__DIR__, 2));
+defined('APP_PATH')  || define('APP_PATH', BASE_PATH . '/app');
 
-define('BASE_PATH',   dirname(__DIR__, 2));
-define('APP_PATH',    BASE_PATH . '/app');
-define('CONFIG_PATH', BASE_PATH . '/config');
-define('STORAGE_PATH',BASE_PATH . '/storage');
-
-spl_autoload_register(function (string $class): void {
+spl_autoload_register(function(string $class): void {
     $file = APP_PATH . '/' . str_replace('\\', '/', $class) . '.php';
     if (file_exists($file)) require_once $file;
 });
@@ -20,77 +17,76 @@ if (file_exists($envFile)) {
     }
 }
 
-ini_set('display_errors', '0');
+ini_set("display_errors", "0");
 error_reporting(0);
 
 $impressionId = (int)($_GET['i'] ?? 0);
-$bannerId     = (int)($_GET['b'] ?? 0);
-
-if (!$impressionId || !$bannerId) {
-    http_response_code(400); exit;
+if (!$impressionId) {
+    http_response_code(400);
+    exit;
 }
 
-try {
-    $db = \Core\Database::getInstance();
+$db = \Core\Database::getInstance();
 
-    // Banner + Campaign laden für Redirect
-    $stmt = $db->prepare('
-        SELECT c.target_url, b.id AS banner_id, b.campaign_id,
-               b.user_id, u.id AS unit_id, u.user_id AS publisher_id
-        FROM ad_banners b
-        JOIN campaigns c ON c.id = b.campaign_id
-        JOIN impressions i ON i.id = ?
-        JOIN ad_units u ON u.id = i.unit_id
-        WHERE b.id = ?
-        LIMIT 1
-    ');
-    $stmt->execute([$impressionId, $bannerId]);
-    $row = $stmt->fetch();
+// Impression laden
+$stmt = $db->prepare('
+    SELECT i.*, b.html, c.pricing_model, c.bid_amount, c.id AS campaign_id,
+           au.user_id AS publisher_id, au.id AS unit_id
+    FROM impressions i
+    JOIN ad_banners b ON b.id = i.banner_id
+    JOIN campaigns c ON c.id = i.campaign_id
+    JOIN ad_units au ON au.id = i.unit_id
+    WHERE i.id = ? AND i.is_fraud = 0
+    LIMIT 1
+');
+$stmt->execute([$impressionId]);
+$impression = $stmt->fetch(\PDO::FETCH_ASSOC);
 
-    if (!$row) {
-        http_response_code(404); exit;
+if (!$impression) {
+    http_response_code(404);
+    exit;
+}
+
+// Klick-Ziel aus Banner HTML extrahieren
+preg_match('/href=["\']([^"\']+)["\']/', $impression['html'] ?? '', $m);
+$targetUrl = $m[1] ?? '/';
+
+// Klick in impressions loggen
+$db->prepare('UPDATE impressions SET clicks = COALESCE(clicks, 0) + 1 WHERE id = ?')
+   ->execute([$impressionId]);
+
+// CPA: Budget + Earnings bei Klick abrechnen
+if ($impression['pricing_model'] === 'cpa') {
+    $cost = (float)$impression['bid_amount'];
+    if ($cost > 0) {
+        // Budget abziehen
+        $db->prepare('
+            UPDATE campaigns
+            SET spent = spent + ?
+            WHERE id = ? AND (total_budget - spent) >= ?
+        ')->execute([$cost, $impression['campaign_id'], $cost]);
+
+        // Publisher Earnings
+        $share = (float)$db->prepare('SELECT revenue_share FROM ad_units WHERE id = ? LIMIT 1')
+            ->execute([$impression['unit_id']]) ? 
+            $db->query('SELECT revenue_share FROM ad_units WHERE id = ' . $impression['unit_id'] . ' LIMIT 1')->fetchColumn() : 80;
+        
+        $publisherEarning = round($cost * ($share / 100), 8);
+        
+        $db->prepare('
+            INSERT INTO earnings (user_id, unit_id, date, currency, amount, impressions, clicks)
+            VALUES (?, ?, CURDATE(), "BTC", ?, 0, 1)
+            ON DUPLICATE KEY UPDATE amount = amount + VALUES(amount), clicks = clicks + 1
+        ')->execute([$impression['publisher_id'], $impression['unit_id'], $publisherEarning]);
+
+        $db->prepare('
+            INSERT INTO balances (user_id, currency, amount)
+            VALUES (?, "BTC", ?)
+            ON DUPLICATE KEY UPDATE amount = amount + VALUES(amount)
+        ')->execute([$impression['publisher_id'], $publisherEarning]);
     }
-
-    // IP hash
-    $ip     = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '')[0]);
-    $ipHash = hash('sha256', $ip . ($_ENV['APP_SECRET'] ?? ''));
-
-    // Fraud check – Doppelklick in 30 Sek?
-    $dupeCheck = $db->prepare('
-        SELECT id FROM clicks
-        WHERE ip_hash = ? AND banner_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 30 SECOND)
-        LIMIT 1
-    ');
-    $dupeCheck->execute([$ipHash, $bannerId]);
-
-    $isDupe = (bool)$dupeCheck->fetch();
-
-    // Click loggen
-    $db->prepare('
-        INSERT INTO clicks
-            (impression_id, banner_id, unit_id, campaign_id, ip_hash,
-             country, referer, fraud_score, is_fraud, cost, created_at)
-        VALUES (?,?,?,?,?,?,?,?,?,0, NOW())
-    ')->execute([
-        $impressionId,
-        $bannerId,
-        $row['unit_id'],
-        $row['campaign_id'],
-        $ipHash,
-        strtoupper(substr($_SERVER['HTTP_CF_IPCOUNTRY'] ?? '', 0, 2)) ?: null,
-        substr($_SERVER['HTTP_REFERER'] ?? '', 0, 2048),
-        $isDupe ? 0.8 : 0.0,
-        $isDupe ? 1 : 0,
-    ]);
-
-    // Earnings für Klick (CPA Modell) – hier nur für CPA relevant
-    // CPM/CPD werden per Impression abgerechnet
-
-} catch (\Exception $e) {
-    // Fehler darf Redirect nicht blockieren
 }
 
-// Redirect zur Zielseite
-$targetUrl = filter_var($row['target_url'] ?? '/', FILTER_VALIDATE_URL) ? $row['target_url'] : '/';
+// Redirect zum Ziel
 header('Location: ' . $targetUrl, true, 302);
 exit;

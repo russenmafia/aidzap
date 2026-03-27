@@ -123,21 +123,40 @@ class AdServeService
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
         $candidates = $stmt->fetchAll();
-
         if (empty($candidates)) return null;
 
-        // Geo-Filter anwenden
+
+        // Geo/Language/Device/Category Filter
+        $eligible = [];
         foreach ($candidates as $candidate) {
             if ($this->matchesGeo($candidate)
                 && $this->matchesLanguage($candidate)
                 && $this->matchesDevice($candidate)
                 && $this->matchesCategory($candidate, $unit)
             ) {
-                $candidate['cost'] = $this->calculateCost($candidate);
-                return $candidate;
+                $eligible[] = $candidate;
             }
         }
+        if (empty($eligible)) return null;
 
+        // Weighted Random
+        $totalWeight = array_sum(array_column($eligible, 'remaining_budget'));
+        if ($totalWeight <= 0) {
+            $selected = $eligible[array_rand($eligible)];
+        } else {
+            $rand = (mt_rand() / mt_getrandmax()) * (float)$totalWeight;
+            $cumulative = 0.0;
+            $selected = end($eligible);
+            foreach ($eligible as $candidate) {
+                $cumulative += (float)$candidate['remaining_budget'];
+                if ($rand <= $cumulative) {
+                    $selected = $candidate;
+                    break;
+                }
+            }
+        }
+        $selected['cost'] = $this->calculateCost($selected);
+        return $selected;
         return null;
     }
 
@@ -189,7 +208,8 @@ class AdServeService
     {
         return match($banner['pricing_model']) {
             'cpm' => (float)$banner['bid_amount'] / 1000,
-            'cpd' => (float)$banner['bid_amount'] / 288, // 5-Minuten-Slots pro Tag
+            'cpd' => (float)$banner['bid_amount'] / 288,
+            'cpa' => 0.0, // CPA: Abrechnung nur bei Klick
             default => (float)$banner['bid_amount'] / 1000,
         };
     }

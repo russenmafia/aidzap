@@ -31,6 +31,11 @@ foreach (['/publisher/earnings','/publisher/withdraw','/advertiser/banners',
     });
 }
 
+// Ad Click Tracking
+$router->get('/ad/click', function() {
+    require_once APP_PATH . '/../public/ad/click.php';
+});
+
 // Ad Serving (wird auch direkt über public/ad/serve.php aufgerufen)
 $router->get('/ad/:uuid', function(string $uuid) {
     $_GET['unit'] = $uuid;
