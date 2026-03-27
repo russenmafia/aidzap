@@ -25,6 +25,9 @@ $active = $active ?? '';
       <a href="/admin" class="sb-item <?= $active === 'stats' ? 'active' : '' ?>">
         <span class="sb-icon">&#9672;</span> <?= __('admin.stats') ?>
       </a>
+      <a href="/admin/finance" class="sb-item <?= $active === 'finance' ? 'active' : '' ?>">
+        <span class="sb-icon">&#128184;</span> Finance
+      </a>
       <a href="/admin/users" class="sb-item <?= $active === 'users' ? 'active' : '' ?>">
         <span class="sb-icon">&#9635;</span> <?= __('admin.users') ?>
       </a>

@@ -149,6 +149,9 @@ $router->get('/robots.txt', function() {
     readfile(BASE_PATH . '/public/robots.txt');
 });
 
+// Finance Dashboard
+$router->get('/admin/finance', [\Controllers\AdminController::class, 'finance']);
+
 // System Overview
 $router->get('/admin/system',              [\Controllers\AdminController::class, 'system']);
 $router->post('/admin/system/clear-cache', [\Controllers\AdminController::class, 'clearCache']);
