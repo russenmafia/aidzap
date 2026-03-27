@@ -50,4 +50,18 @@ class PageController
             'settings' => $settings,
         ]);
     }
+
+    public function advertiser(): void
+    {
+        View::render('pages/advertiser', [
+            'title' => 'Advertiser – aidzap.com',
+        ]);
+    }
+
+    public function publisher(): void
+    {
+        View::render('pages/publisher', [
+            'title' => 'Publisher – aidzap.com',
+        ]);
+    }
 }

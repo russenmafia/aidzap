@@ -61,6 +61,8 @@ $router->post('/admin/faq/:id',               [\Controllers\AdminController::cla
 $router->post('/admin/faq/:id/delete',        [\Controllers\AdminController::class, 'faqDelete']);
 
 // Public Pages
+$router->get('/publisher', [\Controllers\PageController::class, 'publisher']);
+$router->get('/advertiser', [\Controllers\PageController::class, 'advertiser']);
 $router->get('/terms',                        [\Controllers\PageController::class, 'legal']);
 $router->get('/privacy',                      [\Controllers\PageController::class, 'legal']);
 $router->get('/impressum',                    [\Controllers\PageController::class, 'legal']);
