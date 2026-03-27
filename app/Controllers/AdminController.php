@@ -587,106 +587,168 @@ class AdminController
         $db = Database::getInstance();
 
         // ── Heute ────────────────────────────────────────────────────────
-        $today = $db->query("
+        $todayRow = $db->query("
             SELECT
-                COALESCE(SUM(i.cost), 0) AS revenue,
-                COUNT(i.id)              AS impressions
-            FROM impressions i
-            WHERE DATE(i.created_at) = CURDATE() AND i.is_fraud = 0
+                COALESCE(SUM(cost), 0) AS revenue,
+                COUNT(id)              AS impressions
+            FROM impressions
+            WHERE DATE(created_at) = CURDATE() AND is_fraud = 0
         ")->fetch();
-        $today['clicks'] = (int)$db->query("
-            SELECT COUNT(*) FROM clicks WHERE DATE(created_at) = CURDATE() AND is_fraud = 0
+        $today = [
+            'revenue'     => (float)($todayRow['revenue']     ?? 0),
+            'impressions' => (int)  ($todayRow['impressions'] ?? 0),
+            'clicks'      => (int)$db->query("
+                SELECT COUNT(*) FROM clicks
+                WHERE DATE(created_at) = CURDATE() AND is_fraud = 0
+            ")->fetchColumn(),
+        ];
+
+        $payouts_today = (float)$db->query("
+            SELECT COALESCE(SUM(amount), 0) FROM earnings WHERE date = CURDATE()
         ")->fetchColumn();
 
-        $payouts_today = $db->query("
-            SELECT COALESCE(SUM(amount), 0)
-            FROM earnings
-            WHERE date = CURDATE()
-        ")->fetchColumn();
-
-        $ref_today = $db->query("
-            SELECT COALESCE(SUM(commission), 0)
-            FROM referral_earnings
-            WHERE DATE(created_at) = CURDATE()
-        ")->fetchColumn();
+        $ref_today = 0.0;
+        try {
+            $ref_today = (float)$db->query("
+                SELECT COALESCE(SUM(commission), 0)
+                FROM referral_earnings
+                WHERE DATE(created_at) = CURDATE()
+            ")->fetchColumn();
+        } catch (\Throwable $e) {}
 
         // ── Letzte 30 Tage ───────────────────────────────────────────────
-        $monthly = $db->query("
+        $monthlyRow = $db->query("
             SELECT
-                COALESCE(SUM(i.cost), 0) AS revenue,
-                COUNT(i.id)              AS impressions
-            FROM impressions i
-            WHERE i.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-              AND i.is_fraud = 0
+                COALESCE(SUM(cost), 0) AS revenue,
+                COUNT(id)              AS impressions
+            FROM impressions
+            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+              AND is_fraud = 0
         ")->fetch();
-        $monthly['clicks'] = (int)$db->query("
-            SELECT COUNT(*) FROM clicks
-            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) AND is_fraud = 0
-        ")->fetchColumn();
+        $monthly = [
+            'revenue'     => (float)($monthlyRow['revenue']     ?? 0),
+            'impressions' => (int)  ($monthlyRow['impressions'] ?? 0),
+            'clicks'      => (int)$db->query("
+                SELECT COUNT(*) FROM clicks
+                WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) AND is_fraud = 0
+            ")->fetchColumn(),
+        ];
 
-        $payouts_monthly = $db->query("
-            SELECT COALESCE(SUM(amount), 0)
-            FROM earnings
+        $payouts_monthly = (float)$db->query("
+            SELECT COALESCE(SUM(amount), 0) FROM earnings
             WHERE date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
         ")->fetchColumn();
 
-        $ref_monthly = $db->query("
-            SELECT COALESCE(SUM(commission), 0)
-            FROM referral_earnings
-            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-        ")->fetchColumn();
+        $ref_monthly = 0.0;
+        try {
+            $ref_monthly = (float)$db->query("
+                SELECT COALESCE(SUM(commission), 0)
+                FROM referral_earnings
+                WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            ")->fetchColumn();
+        } catch (\Throwable $e) {}
 
-        // ── Per-Impression Analyse ────────────────────────────────────────
+        // ── Per-Impression Analyse (by pricing model, 30d) ────────────────
+        // Revenue per model from impressions; publisher payout from earnings aggregated
+        // separately — avoids cross-product JOIN between impressions and earnings.
         $perImpression = $db->query("
             SELECT
                 c.pricing_model,
                 COUNT(i.id)                                         AS impressions,
                 COALESCE(SUM(i.cost), 0)                           AS total_revenue,
-                COALESCE(SUM(i.cost), 0) / NULLIF(COUNT(i.id), 0) AS avg_revenue_per_imp,
-                COALESCE(SUM(e.amount), 0)                         AS total_publisher_payout,
-                COALESCE(SUM(re.commission), 0)                    AS total_ref_payout
+                COALESCE(SUM(i.cost), 0) / NULLIF(COUNT(i.id), 0) AS avg_revenue_per_imp
             FROM impressions i
             JOIN campaigns c ON c.id = i.campaign_id
-            LEFT JOIN earnings e ON e.unit_id = i.unit_id
-                AND e.date = DATE(i.created_at)
-            LEFT JOIN referral_earnings re ON re.from_user_id = i.campaign_id
-                AND DATE(re.created_at) = DATE(i.created_at)
             WHERE i.is_fraud = 0
               AND i.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
             GROUP BY c.pricing_model
         ")->fetchAll();
 
+        // Publisher payouts by campaign pricing model (via unit→impression linkage)
+        $pubByModel = [];
+        try {
+            $rows = $db->query("
+                SELECT c.pricing_model,
+                       COALESCE(SUM(e.amount), 0) AS total_payout
+                FROM earnings e
+                JOIN ad_units au ON au.id = e.unit_id
+                JOIN impressions i ON i.unit_id = e.unit_id
+                    AND i.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                    AND i.is_fraud = 0
+                JOIN campaigns c ON c.id = i.campaign_id
+                WHERE e.date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                GROUP BY c.pricing_model
+            ")->fetchAll();
+            foreach ($rows as $r) {
+                $pubByModel[$r['pricing_model']] = (float)$r['total_payout'];
+            }
+        } catch (\Throwable $e) {}
+
+        $refByModel = [];
+        try {
+            $rows = $db->query("
+                SELECT c.pricing_model,
+                       COALESCE(SUM(re.commission), 0) AS total_commission
+                FROM referral_earnings re
+                JOIN impressions i ON i.unit_id = re.from_user_id
+                    AND i.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                    AND i.is_fraud = 0
+                JOIN campaigns c ON c.id = i.campaign_id
+                WHERE re.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                GROUP BY c.pricing_model
+            ")->fetchAll();
+            foreach ($rows as $r) {
+                $refByModel[$r['pricing_model']] = (float)$r['total_commission'];
+            }
+        } catch (\Throwable $e) {}
+
+        // Merge payout data into perImpression rows
+        foreach ($perImpression as &$row) {
+            $model = $row['pricing_model'];
+            $row['total_publisher_payout'] = $pubByModel[$model] ?? 0.0;
+            $row['total_ref_payout']       = $refByModel[$model] ?? 0.0;
+        }
+        unset($row);
+
         // ── Revenue Share Verteilung ──────────────────────────────────────
-        $revenueShare = $db->query("
-            SELECT
-                au.quality_level,
-                au.revenue_share,
-                COUNT(au.id)               AS unit_count,
-                COALESCE(SUM(e.amount), 0) AS total_paid
-            FROM ad_units au
-            LEFT JOIN earnings e ON e.unit_id = au.id
-                AND e.date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-            GROUP BY au.quality_level, au.revenue_share
-            ORDER BY au.revenue_share DESC
-        ")->fetchAll();
+        $revenueShare = [];
+        try {
+            $revenueShare = $db->query("
+                SELECT
+                    au.quality_level,
+                    au.revenue_share,
+                    COUNT(au.id)               AS unit_count,
+                    COALESCE(
+                        (SELECT SUM(e2.amount) FROM earnings e2
+                         WHERE e2.unit_id = au.id
+                           AND e2.date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)),
+                        0
+                    ) AS total_paid
+                FROM ad_units au
+                GROUP BY au.quality_level, au.revenue_share
+                ORDER BY au.revenue_share DESC
+            ")->fetchAll();
+        } catch (\Throwable $e) {}
 
         // ── Referral Kosten nach Level ────────────────────────────────────
-        $refByLevel = $db->query("
-            SELECT
-                level,
-                COUNT(*)                     AS transactions,
-                COALESCE(SUM(commission), 0) AS total_commission,
-                COALESCE(AVG(pct), 0)        AS avg_pct
-            FROM referral_earnings
-            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-            GROUP BY level
-            ORDER BY level
-        ")->fetchAll();
+        $refByLevel = [];
+        try {
+            $refByLevel = $db->query("
+                SELECT
+                    level,
+                    COUNT(*)                     AS transactions,
+                    COALESCE(SUM(commission), 0) AS total_commission,
+                    COALESCE(AVG(pct), 0)        AS avg_pct
+                FROM referral_earnings
+                WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                GROUP BY level
+                ORDER BY level
+            ")->fetchAll();
+        } catch (\Throwable $e) {}
 
         // ── Letzte Transaktionen ─────────────────────────────────────────
         $recentTransactions = $db->query("
             SELECT
-                'impression' AS type,
                 i.cost       AS amount,
                 i.created_at,
                 c.name       AS campaign_name,
@@ -703,11 +765,11 @@ class AdminController
             'title'              => 'Finance Dashboard',
             'active'             => 'finance',
             'today'              => $today,
-            'payouts_today'      => (float)$payouts_today,
-            'ref_today'          => (float)$ref_today,
+            'payouts_today'      => $payouts_today,
+            'ref_today'          => $ref_today,
             'monthly'            => $monthly,
-            'payouts_monthly'    => (float)$payouts_monthly,
-            'ref_monthly'        => (float)$ref_monthly,
+            'payouts_monthly'    => $payouts_monthly,
+            'ref_monthly'        => $ref_monthly,
             'perImpression'      => $perImpression,
             'revenueShare'       => $revenueShare,
             'refByLevel'         => $refByLevel,
