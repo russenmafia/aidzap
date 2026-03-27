@@ -142,6 +142,42 @@
 </div>
 <?php endif; ?>
 
+<?php if (!empty($refData) && ($refData['reason'] ?? '') !== 'own_level_too_low'): ?>
+<div class="unit-card" style="margin-bottom:20px">
+  <div class="unit-header">
+    <div class="dt-name">&#128279; Referral Network</div>
+    <a href="/dashboard/referrals" style="font-size:12px;color:#3ecf8e;text-decoration:none">View all &#8594;</a>
+  </div>
+  <div style="padding:20px">
+    <div class="metrics" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
+      <div class="metric">
+        <div class="metric-label">Active Refs</div>
+        <div class="metric-val"><?= $refData['active_refs'] ?></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Multiplier</div>
+        <div class="metric-val <?= ($refData['multiplier'] ?? 0) > 0 ? 'green' : '' ?>">
+          <?= $refData['multiplier'] ?? 0 ?>x
+        </div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Your Level</div>
+        <div class="metric-val"><?= ucfirst($refData['own_level'] ?? 'bronze') ?></div>
+      </div>
+    </div>
+    <?php
+      $activeRefs = $refData['active_refs'] ?? 0;
+      $next = $activeRefs >= 3 ? null : ($activeRefs >= 2 ? 3 : ($activeRefs >= 1 ? 2 : 1));
+    ?>
+    <?php if ($next): ?>
+    <div style="font-size:12px;color:rgba(255,255,255,0.3)">
+      <?= $next - $activeRefs ?> more active ref(s) needed for <?= $next ?>x multiplier
+    </div>
+    <?php endif; ?>
+  </div>
+</div>
+<?php endif; ?>
+
 <?php
 function statusBadge(string $status): string {
     $map = [

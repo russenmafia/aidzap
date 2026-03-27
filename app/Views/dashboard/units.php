@@ -46,6 +46,8 @@
       <span class="unit-size"><?= htmlspecialchars($u['size'] ?? '–') ?></span>
       <?php endif; ?>
       <?= statusBadge($u['status']) ?>
+      <?php $qlevel = $u['quality_level'] ?? 'bronze'; $qshare = $u['revenue_share'] ?? 60; $qlColors = ['bronze'=>'#cd7f32','silver'=>'#aaa','gold'=>'#f5a623','platinum'=>'#3ecf8e']; $qlIcons = ['bronze'=>'🥉','silver'=>'🥈','gold'=>'🥇','platinum'=>'💎']; ?>
+      <span style="font-size:11px;color:<?= $qlColors[$qlevel] ?>">  <?= $qlIcons[$qlevel] ?> <?= ucfirst($qlevel) ?> · <?= $qshare ?>%</span>
     </div>
   </div>
 

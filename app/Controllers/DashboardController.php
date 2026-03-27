@@ -34,6 +34,8 @@ class DashboardController
         // Publisher ad units
         $units = $db->prepare('
             SELECT u.id, u.uuid, u.name, u.size, u.status, u.website_url,
+                   u.quality_level, u.revenue_share,
+                   u.quality_downgrade_pending_since, u.first_active_at,
                    COALESCE(SUM(e.impressions), 0) AS impressions,
                    COALESCE(SUM(e.clicks), 0)      AS clicks,
                    COALESCE(SUM(e.amount), 0)      AS earned
@@ -77,12 +79,17 @@ class DashboardController
         $balance->execute([$userId]);
         $balances = $balance->fetchAll();
 
+        // Quality + Referral data
+        $qualityService = new \Services\QualityScoreService();
+        $refData = $qualityService->calculateReferralMultiplier($userId);
+
         View::render('dashboard/index', [
             'title'      => 'Dashboard',
             'user'       => $user,
             'pubStats'   => $pubStats,
             'advStats'   => $advStats,
             'units'      => $units,
+            'refData'    => $refData,
             'campaigns'  => $campaigns,
             'balances'   => $balances,
         ], 'dashboard');
