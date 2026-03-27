@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-define('BASE_PATH',   dirname(__DIR__, 2));
-define('APP_PATH',    BASE_PATH . '/app');
-define('CONFIG_PATH', BASE_PATH . '/config');
-define('STORAGE_PATH',BASE_PATH . '/storage');
+defined('BASE_PATH') || define('BASE_PATH', dirname(__DIR__, 2));
+defined('APP_PATH') || define('APP_PATH', BASE_PATH . '/app');
+defined('CONFIG_PATH') || define('CONFIG_PATH', BASE_PATH . '/config');
+defined('STORAGE_PATH') || define('STORAGE_PATH', BASE_PATH . '/storage');
 
 // Autoloader
 spl_autoload_register(function (string $class): void {

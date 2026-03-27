@@ -150,16 +150,6 @@ class ReferralService
         }
     }
 
-        foreach ($stmt->fetchAll() as $row) {
-            $pct        = (float)$pcts[$row['level']];
-            $commission = round($amount * $pct / 100, 8);
-            if ($commission <= 0) continue;
-
-            $this->creditCommission((int)$row['user_id'], $advertiserId, $row['level'],
-                'spend', $amount, $pct, $commission);
-        }
-    }
-
     // ── Provision gutschreiben ────────────────────────────────────────────
     private function creditCommission(int $userId, int $fromUserId, int $level,
                                       string $type, float $base, float $pct, float $commission): void

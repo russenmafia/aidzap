@@ -44,24 +44,30 @@ class AdServeService
             return;
         }
 
+        // 2b. Impression Throttling
+        $intervalMin = (int)$this->db->query('SELECT impression_interval_min FROM referral_settings LIMIT 1')->fetchColumn() ?: 60;
+        $recentStmt = $this->db->prepare('SELECT id FROM impressions WHERE unit_id = ? AND ip_hash = ? AND is_fraud = 0 AND created_at >= DATE_SUB(NOW(), INTERVAL ? MINUTE) LIMIT 1');
+        $recentStmt->execute([$unit['id'], $this->ipHash, $intervalMin]);
+        $isDuplicate = (bool)$recentStmt->fetch();
         // 3. Passenden Banner auswählen
         $banner = $this->selectBanner($unit);
 
         if (!$banner) {
             // Fallback HTML ausgeben falls definiert
+            error_log('AIDZAP DEBUG: no banner for unit ' . $unitUuid . ' size=' . ($unit['size'] ?? '?'));
             $this->serveFallback($unit);
             return;
         }
 
-        // 4. Impression loggen
-        $impressionId = $this->logImpression($unit, $banner, $fraudResult['score'], false);
+        // 4. Impression loggen (nur wenn kein Duplikat)
+        if (!$isDuplicate) {
+            $impressionId = $this->logImpression($unit, $banner, $fraudResult['score'], false);
+            $this->deductBudget($banner['campaign_id'], $banner['cost']);
+            $this->creditEarnings($unit, $banner['cost']);
+        } else {
+            $impressionId = 0;
 
-        // 5. Budget abziehen (async-safe via DB transaction)
-        $this->deductBudget($banner['campaign_id'], $banner['cost']);
-
-        // 6. Publisher Earnings gutschreiben
-        $this->creditEarnings($unit, $banner['cost']);
-
+        }
         // 7. Banner ausliefern mit Click-Tracking Wrapper
         $this->renderBanner($banner, $unit, $impressionId);
     }

@@ -30,7 +30,8 @@ class AdminReferralController
                 level2_pct       = ?,
                 level3_pct       = ?,
                 ai_banner_enabled = ?,
-                ai_banner_price   = ?
+                ai_banner_price   = ?,
+                impression_interval_min = ?
             WHERE id = 1
         ')->execute([
             isset($_POST['enabled'])          ? 1 : 0,
@@ -39,6 +40,7 @@ class AdminReferralController
             min(50, max(0, (float)($_POST['level3_pct']   ?? 1))),
             isset($_POST['ai_banner_enabled']) ? 1 : 0,
             max(0, (float)($_POST['ai_banner_price'] ?? 0)),
+            min(1440, max(1, (int)($_POST['impression_interval_min'] ?? 60))),
         ]);
 
         header('Location: /admin/referrals?saved=1'); exit;

@@ -33,6 +33,7 @@ foreach (['/publisher/earnings','/publisher/withdraw','/advertiser/banners',
 
 // Ad Serving (wird auch direkt über public/ad/serve.php aufgerufen)
 $router->get('/ad/:uuid', function(string $uuid) {
+    $_GET['unit'] = $uuid;
     require_once APP_PATH . '/../public/ad/serve.php';
 });
 
