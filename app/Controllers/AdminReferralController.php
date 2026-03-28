@@ -64,6 +64,12 @@ class AdminReferralController
             $socialMessages,
         ]);
 
+        // Social messages – validate JSON
+        $socialMessages = $_POST['social_messages'] ?? '[]';
+        if (json_decode($socialMessages) === null) $socialMessages = '[]';
+        $db->prepare('UPDATE referral_settings SET social_messages = ? WHERE id = 1')
+           ->execute([$socialMessages]);
+
         header('Location: /admin/referrals?saved=1'); exit;
     }
 }

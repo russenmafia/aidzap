@@ -186,6 +186,17 @@ $settings = array_merge([
         </div>
       </div>
 
+      <!-- Social Messages Editor -->
+      <div style="margin-bottom:28px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:8px">
+          Post Templates (JSON)
+        </div>
+        <textarea name="social_messages" rows="12"
+                  style="width:100%;background:#080c10;border:0.5px solid rgba(255,255,255,0.1);border-radius:8px;padding:12px 14px;color:rgba(255,255,255,0.7);font-family:'DM Mono',monospace;font-size:11px;resize:vertical"
+        ><?= htmlspecialchars($settings['social_messages'] ?? '[]') ?></textarea>
+        <span class="field-hint">JSON array. Use {ref_link} as placeholder. Format: [{"title":"...","text":"...","platform":"all"}]</span>
+      </div>
+
       <button type="submit" class="btn-approve">Save Settings →</button>
     </form>
   </div>
