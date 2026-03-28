@@ -136,6 +136,10 @@ $router->get('/publisher/withdraw',  [\Controllers\WithdrawController::class, 'i
 $router->get('/dashboard/referrals', [\Controllers\ReferralController::class, 'dashboard']);
 $router->get('/referrals',           [\Controllers\ReferralController::class, 'index']);
 $router->get('/r/:code',             [\Controllers\ReferralController::class, 'redirect']);
+$router->get('/admin/social-templates',          [\Controllers\AdminSocialTemplatesController::class, 'index']);
+$router->post('/admin/social-templates/create', [\Controllers\AdminSocialTemplatesController::class, 'create']);
+$router->post('/admin/social-templates/update', [\Controllers\AdminSocialTemplatesController::class, 'update']);
+$router->post('/admin/social-templates/delete', [\Controllers\AdminSocialTemplatesController::class, 'delete']);
 $router->get('/admin/referrals',     [\Controllers\AdminReferralController::class, 'index']);
 $router->post('/admin/referrals/save', [\Controllers\AdminReferralController::class, 'save']);
 
