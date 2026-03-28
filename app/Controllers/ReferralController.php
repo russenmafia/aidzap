@@ -63,7 +63,9 @@ class ReferralController
         $socialMessages = [];
         try {
             $db = Database::getInstance();
-            $result = $db->query('SELECT social_messages FROM referral_settings WHERE id = 1 LIMIT 1')->fetch(\PDO::FETCH_ASSOC);
+            $stmt = $db->prepare('SELECT social_messages FROM referral_settings WHERE id = 1 LIMIT 1');
+            $stmt->execute();
+            $result = $stmt->fetch(\PDO::FETCH_ASSOC);
             $socialMessages = json_decode($result['social_messages'] ?? '[]', true) ?: [];
 
             foreach ($socialMessages as &$msg) {

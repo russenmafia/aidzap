@@ -4,21 +4,7 @@
 -- =============================================================================
 
 -- Add ref_code column to users table if it doesn't exist
-SET @dbname = DATABASE();
-SET @tablename = "users";
-SET @columnname = "ref_code";
-SET @preparedStatement = (SELECT IF(
-  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE 
-    (TABLE_NAME = @tablename) AND 
-    (TABLE_SCHEMA = @dbname) AND 
-    (COLUMN_NAME = @columnname)
-  ) > 0,
-  "SELECT 1",
-  CONCAT("ALTER TABLE ", @tablename, " ADD ", @columnname, " VARCHAR(32) DEFAULT NULL, ADD UNIQUE KEY `uq_ref_code` (`ref_code`)")
-));
-PREPARE alterIfNotExists FROM @preparedStatement;
-EXECUTE alterIfNotExists;
-DEALLOCATE PREPARE alterIfNotExists;
+ALTER TABLE `users` ADD COLUMN `ref_code` VARCHAR(32) DEFAULT NULL, ADD UNIQUE KEY `uq_ref_code` (`ref_code`);
 
 -- =============================================================================
 -- REFERRALS

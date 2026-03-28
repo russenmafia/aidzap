@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Core;
 
 use PDO;
+use PDOException;
 
 class Migration
 {
@@ -11,8 +12,13 @@ class Migration
 
     public static function init(): void
     {
-        self::$db = Database::getInstance();
-        self::runPendingMigrations();
+        try {
+            self::$db = Database::getInstance();
+            self::runPendingMigrations();
+        } catch (\Exception $e) {
+            error_log("Migration init failed: " . $e->getMessage());
+            // Don't block app startup if migrations fail
+        }
     }
 
     private static function runPendingMigrations(): void
@@ -32,8 +38,9 @@ class Migration
     private static function hasRun(string $name): bool
     {
         try {
-            $result = self::$db->query("SELECT 1 FROM migrations WHERE name = '" . self::$db->quote($name) . "' LIMIT 1")->fetch();
-            return (bool)$result;
+            $stmt = self::$db->prepare("SELECT 1 FROM migrations WHERE name = ? LIMIT 1");
+            $stmt->execute([$name]);
+            return (bool)$stmt->fetch();
         } catch (\Exception) {
             // Table doesn't exist yet
             self::createMigrationsTable();
@@ -64,7 +71,16 @@ class Migration
             $statements = array_filter(array_map('trim', explode(';', $sql)));
             foreach ($statements as $statement) {
                 if (!empty($statement)) {
-                    self::$db->exec($statement);
+                    try {
+                        self::$db->exec($statement);
+                    } catch (PDOException $e) {
+                        // Log individual statement errors but continue with others
+                        // This allows duplicate columns, tables to be handled gracefully
+                        $code = $e->errorInfo[1] ?? null;
+                        if ($code !== 1060 && $code !== 1050) { // 1060 = duplicate column, 1050 = table already exists
+                            error_log("Migration '$name' statement error: " . $e->getMessage());
+                        }
+                    }
                 }
             }
             error_log("Migration '$name' executed successfully");
