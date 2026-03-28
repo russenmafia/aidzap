@@ -79,8 +79,15 @@
     <input type="hidden" id="reg-wallet-nonce"     name="wallet_nonce">
     <input type="hidden" id="reg-wallet-message"   name="wallet_message">
 
+    <!-- Honeypot -->
+    <div style="display:none" aria-hidden="true">
+      <input type="text" name="website" tabindex="-1" autocomplete="off">
+    </div>
+    <!-- Turnstile -->
+    <div class="cf-turnstile" data-sitekey="<?= $_ENV['TURNSTILE_SITE_KEY'] ?? '' ?>" data-theme="dark"></div>
     <button type="submit" class="btn-submit"><?= __('auth.register_btn') ?></button>
   </form>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 
   <p class="auth-switch"><?= __('auth.already_account') ?> <a href="/login"><?= __('auth.sign_in_link') ?></a></p>
 

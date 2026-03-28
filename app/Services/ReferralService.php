@@ -92,16 +92,20 @@ class ReferralService
         $settings = $this->getSettings();
         if (!$settings['enabled'] || !$settings['on_earnings'] || $amount <= 0) return;
 
-        $basePcts = [1 => $settings['level1_pct'], 2 => $settings['level2_pct'], 3 => $settings['level3_pct']];
+        // Basis = Admin-Marge statt Publisher-Earnings
+        $shareStmt = $this->db->prepare('SELECT revenue_share FROM ad_units WHERE user_id = ? AND status = "active" ORDER BY FIELD(quality_level,"platinum","gold","silver","bronze") LIMIT 1');
+        $shareStmt->execute([$publisherId]);
+        $revenueShare = (float)($shareStmt->fetchColumn() ?: 80);
+        $advertiserRevenue = $revenueShare > 0 ? $amount / ($revenueShare / 100) : $amount;
+        $adminMargin = $advertiserRevenue - $amount;
+        if ($adminMargin <= 0) return;
 
+        $basePcts = [1 => $settings['level1_pct'], 2 => $settings['level2_pct'], 3 => $settings['level3_pct']];
         $stmt = $this->db->prepare('SELECT user_id, level FROM referrals WHERE referred_by = ?');
         $stmt->execute([$publisherId]);
-
         foreach ($stmt->fetchAll() as $row) {
             $referrerId = (int)$row['user_id'];
             $basePct    = (float)$basePcts[$row['level']];
-
-            // Apply quality multiplier for level-1 referrers
             $effectivePct = $basePct;
             if ((int)$row['level'] === 1) {
                 $mStmt = $this->db->prepare('SELECT ref_multiplier FROM users WHERE id = ? LIMIT 1');
@@ -109,31 +113,30 @@ class ReferralService
                 $multiplier   = (float)($mStmt->fetchColumn() ?: 0);
                 $effectivePct = round($basePct * $multiplier, 4);
             }
-
-            $commission = round($amount * $effectivePct / 100, 8);
+            $commission = round($adminMargin * $effectivePct / 100, 8);
             if ($commission <= 0) continue;
-
             $this->creditCommission($referrerId, $publisherId, $row['level'],
-                'earnings', $amount, $effectivePct, $commission);
+                'earnings', $adminMargin, $effectivePct, $commission);
         }
     }
-
-    // ── Provision bei Advertiser Spend gutschreiben ───────────────────────
     public function processSpend(int $advertiserId, float $amount): void
     {
         $settings = $this->getSettings();
         if (!$settings['enabled'] || !$settings['on_spend'] || $amount <= 0) return;
 
-        $basePcts = [1 => $settings['level1_pct'], 2 => $settings['level2_pct'], 3 => $settings['level3_pct']];
+        // Admin-Marge bei Spend = Advertiser-Betrag - durchschnittliche Publisher-Auszahlung
+        // Durchschnittliche Revenue Share aller aktiven Units
+        $avgShare = (float)($this->db->query('SELECT AVG(revenue_share) FROM ad_units WHERE status = "active"')->fetchColumn() ?: 80);
+        $avgPublisherPayout = $amount * ($avgShare / 100);
+        $adminMargin = $amount - $avgPublisherPayout;
+        if ($adminMargin <= 0) return;
 
+        $basePcts = [1 => $settings['level1_pct'], 2 => $settings['level2_pct'], 3 => $settings['level3_pct']];
         $stmt = $this->db->prepare('SELECT user_id, level FROM referrals WHERE referred_by = ?');
         $stmt->execute([$advertiserId]);
-
         foreach ($stmt->fetchAll() as $row) {
             $referrerId = (int)$row['user_id'];
             $basePct    = (float)$basePcts[$row['level']];
-
-            // Apply quality multiplier for level-1 referrers
             $effectivePct = $basePct;
             if ((int)$row['level'] === 1) {
                 $mStmt = $this->db->prepare('SELECT ref_multiplier FROM users WHERE id = ? LIMIT 1');
@@ -141,12 +144,10 @@ class ReferralService
                 $multiplier   = (float)($mStmt->fetchColumn() ?: 0);
                 $effectivePct = round($basePct * $multiplier, 4);
             }
-
-            $commission = round($amount * $effectivePct / 100, 8);
+            $commission = round($adminMargin * $effectivePct / 100, 8);
             if ($commission <= 0) continue;
-
             $this->creditCommission($referrerId, $advertiserId, $row['level'],
-                'spend', $amount, $effectivePct, $commission);
+                'spend', $adminMargin, $effectivePct, $commission);
         }
     }
 

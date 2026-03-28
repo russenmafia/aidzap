@@ -46,8 +46,15 @@
         <span><?= __('auth.remember_me') ?></span>
       </label>
     </div>
+    <!-- Honeypot -->
+    <div style="display:none" aria-hidden="true">
+      <input type="text" name="website" tabindex="-1" autocomplete="off">
+    </div>
+    <!-- Turnstile -->
+    <div class="cf-turnstile" data-sitekey="<?= $_ENV['TURNSTILE_SITE_KEY'] ?? '' ?>" data-theme="dark"></div>
     <button type="submit" class="btn-submit"><?= __('auth.login_btn') ?></button>
   </form>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 
   <p class="auth-switch"><?= __('auth.no_account') ?> <a href="/register"><?= __('auth.create_free') ?></a></p>
 </div>

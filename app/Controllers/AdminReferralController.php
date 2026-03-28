@@ -31,7 +31,11 @@ class AdminReferralController
                 level3_pct       = ?,
                 ai_banner_enabled = ?,
                 ai_banner_price   = ?,
-                impression_interval_min = ?
+                impression_interval_min = ?,
+                signup_bonus_active = ?,
+                signup_bonus_amount = ?,
+                on_earnings = ?,
+                on_spend = ?
             WHERE id = 1
         ')->execute([
             isset($_POST['enabled'])          ? 1 : 0,
@@ -41,6 +45,10 @@ class AdminReferralController
             isset($_POST['ai_banner_enabled']) ? 1 : 0,
             max(0, (float)($_POST['ai_banner_price'] ?? 0)),
             min(1440, max(1, (int)($_POST['impression_interval_min'] ?? 60))),
+            isset($_POST['signup_bonus_active']) ? 1 : 0,
+            max(0, (float)($_POST['signup_bonus'] ?? 0)),
+            isset($_POST['on_earnings']) ? 1 : 0,
+            isset($_POST['on_spend']) ? 1 : 0,
         ]);
 
         header('Location: /admin/referrals?saved=1'); exit;

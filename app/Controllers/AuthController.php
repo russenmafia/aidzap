@@ -32,6 +32,15 @@ class AuthController
         \Core\RateLimit::check('register');
         Auth::csrfVerify($_POST['csrf_token'] ?? '');
 
+
+        // Honeypot Check
+        if (!empty($_POST["website"])) { http_response_code(400); exit; }
+
+        // Turnstile Verify
+        if (!$this->verifyTurnstile()) {
+            View::render("auth/register", ["title"=>"Register","errors"=>["Security check failed. Please try again."],"old"=>$_POST]);
+            return;
+        }
         $username = trim($_POST['username'] ?? '');
         $password = $_POST['password'] ?? '';
         $confirm  = $_POST['password_confirm'] ?? '';
@@ -100,6 +109,15 @@ class AuthController
         \Core\RateLimit::check('login');
         Auth::csrfVerify($_POST['csrf_token'] ?? '');
 
+        // Honeypot Check
+        if (!empty($_POST["website"])) { http_response_code(400); exit; }
+
+        // Turnstile Verify
+        if (!$this->verifyTurnstile()) {
+            View::render("auth/login", ["title"=>"Sign in","errors"=>["Security check failed. Please try again."],"old"=>$_POST,"csrf_token"=>Auth::csrfToken(),"wc_project_id"=>self::wcProjectId()]);
+            return;
+        }
+
         $username = trim($_POST['username'] ?? '');
         $password = $_POST['password'] ?? '';
 
@@ -157,5 +175,22 @@ class AuthController
             error_log('WALLETCONNECT_PROJECT_ID is not set. WalletConnect will not work.');
         }
         return $id;
+    }
+    private function verifyTurnstile(): bool
+    {
+        $token = $_POST['cf-turnstile-response'] ?? '';
+        if (empty($token)) return false;
+        $secret = $_ENV['TURNSTILE_SECRET_KEY'] ?? '';
+        if (empty($secret)) return true;
+        $response = @file_get_contents('https://challenges.cloudflare.com/turnstile/v0/siteverify', false,
+            stream_context_create(['http' => [
+                'method'  => 'POST',
+                'header'  => 'Content-Type: application/x-www-form-urlencoded',
+                'content' => http_build_query(['secret' => $secret, 'response' => $token]),
+            ]])
+        );
+        if (!$response) return false;
+        $data = json_decode($response, true);
+        return $data['success'] ?? false;
     }
 }

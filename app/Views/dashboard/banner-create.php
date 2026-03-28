@@ -176,9 +176,10 @@
       <button type="button" class="btn-ghost-sm" onclick="regenerateAi()" style="margin-top:8px">↻ Regenerate</button>
     </div>
     <?php endif; ?>
+  </div><!-- /method-ai -->
 
-  <div style="margin-top:8px;display:flex;gap:12px">
-    <button type="submit" class="btn-submit">Submit for Review →</button>
+  <div style="margin-top:24px;display:flex;gap:12px">
+    <button type="submit" class="btn-submit">Submit for Review &#8594;</button>
     <a href="/advertiser/campaigns/<?= htmlspecialchars($campaign['uuid']) ?>/banners" class="btn-ghost-sm">Cancel</a>
   </div>
 

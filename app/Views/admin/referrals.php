@@ -86,11 +86,11 @@ $totalUsers       = (int)$db->query('SELECT COUNT(*) FROM users WHERE referred_b
         <div style="font-size:13px;font-weight:500;color:rgba(255,255,255,0.5);margin-bottom:16px;letter-spacing:.06em;text-transform:uppercase">Apply commissions on</div>
         <div style="display:flex;gap:20px">
           <label class="checkbox-label">
-            <input type="checkbox" name="on_earnings" value="1" <?= 1 ? 'checked' : '' ?> style="accent-color:#3ecf8e">
+            <input type="checkbox" name="on_earnings" value="1" <?= $settings['on_earnings'] ? 'checked' : '' ?> style="accent-color:#3ecf8e">
             <span>Publisher earnings</span>
           </label>
           <label class="checkbox-label">
-            <input type="checkbox" name="on_spend" value="1" <?= 1 ? 'checked' : '' ?> style="accent-color:#3ecf8e">
+            <input type="checkbox" name="on_spend" value="1" <?= $settings['on_spend'] ? 'checked' : '' ?> style="accent-color:#3ecf8e">
             <span>Advertiser spend</span>
           </label>
         </div>
