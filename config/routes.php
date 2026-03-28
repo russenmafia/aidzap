@@ -80,6 +80,8 @@ $router->get('/advertiser/campaigns/:uuid/banners',              [\Controllers\B
 $router->get('/advertiser/campaigns/:uuid/banners/create',       [\Controllers\BannerController::class, 'createForm']);
 $router->post('/advertiser/campaigns/:uuid/banners/create',      [\Controllers\BannerController::class, 'create']);
 $router->post('/advertiser/campaigns/:uuid/banners/:buuid/delete', [\Controllers\BannerController::class, 'delete']);
+$router->get('/advertiser/campaigns/:uuid/banners/:buuid/edit',   [\Controllers\BannerController::class, 'editForm']);
+$router->post('/advertiser/campaigns/:uuid/banners/:buuid/edit',  [\Controllers\BannerController::class, 'edit']);
 $router->post('/advertiser/banners/generate-ai',                 [\Controllers\BannerController::class, 'generateAi']);
 
 // Payment

@@ -11,6 +11,9 @@
 <?php if (isset($_GET['created'])): ?>
 <div class="flash flash-success">Banner submitted for review.</div>
 <?php endif; ?>
+<?php if (isset($_GET['saved'])): ?>
+<div class="flash flash-success">Banner updated and submitted for review.</div>
+<?php endif; ?>
 
 <?php if (empty($banners)): ?>
 <div class="empty-state">
@@ -31,6 +34,10 @@
     </div>
     <div class="unit-meta">
       <?= statusBadge($b['status']) ?>
+      <a href="/advertiser/campaigns/<?= htmlspecialchars($campaign['uuid']) ?>/banners/<?= htmlspecialchars($b['uuid']) ?>/edit"
+         style="font-size:12px;color:#3ecf8e;text-decoration:none;padding:6px 12px;border:0.5px solid rgba(62,207,142,0.3);border-radius:6px">
+        Edit
+      </a>
       <?php if (in_array($b['status'], ['draft','rejected'])): ?>
       <form method="POST" action="/advertiser/campaigns/<?= htmlspecialchars($campaign['uuid']) ?>/banners/<?= htmlspecialchars($b['uuid']) ?>/delete" style="display:inline">
         <button class="action-btn" style="color:#e05454;border-color:rgba(224,84,84,0.25)" onclick="return confirm('Delete this banner?')">Delete</button>

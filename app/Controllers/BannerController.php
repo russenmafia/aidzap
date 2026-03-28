@@ -234,6 +234,84 @@ class BannerController
         ]);
     }
 
+    // ── Banner bearbeiten – Formular ─────────────────────────────────────
+    public function editForm(string $campaignUuid, string $bannerUuid): void
+    {
+        Auth::require();
+        $campaign = $this->loadCampaign($campaignUuid);
+        if (!$campaign) { http_response_code(404); die('Not found'); }
+
+        $db = Database::getInstance();
+        $stmt = $db->prepare('SELECT * FROM ad_banners WHERE uuid = ? AND campaign_id = ? LIMIT 1');
+        $stmt->execute([$bannerUuid, $campaign['id']]);
+        $banner = $stmt->fetch();
+        if (!$banner) { http_response_code(404); die('Not found'); }
+
+        View::render('advertiser/banner-edit', [
+            'title'      => 'Edit Banner',
+            'active'     => 'banners',
+            'campaign'   => $campaign,
+            'banner'     => $banner,
+            'csrf_token' => Auth::csrfToken(),
+        ], 'dashboard');
+    }
+
+    // ── Banner bearbeiten – POST ─────────────────────────────────────────
+    public function edit(string $campaignUuid, string $bannerUuid): void
+    {
+        Auth::require();
+        Auth::csrfVerify($_POST['csrf_token'] ?? '');
+
+        $campaign = $this->loadCampaign($campaignUuid);
+        if (!$campaign) { http_response_code(404); die('Not found'); }
+
+        $db = Database::getInstance();
+        $stmt = $db->prepare('SELECT * FROM ad_banners WHERE uuid = ? AND campaign_id = ? LIMIT 1');
+        $stmt->execute([$bannerUuid, $campaign['id']]);
+        $banner = $stmt->fetch();
+        if (!$banner) { http_response_code(404); die('Not found'); }
+
+        $type = (string)($banner['type'] ?? 'html');
+        $isImageBanner = in_array($type, ['image', 'upload'], true)
+            || str_contains((string)($banner['html'] ?? ''), '/uploads/banners/');
+
+        if ($isImageBanner && !empty($_FILES['banner_image']['name'])) {
+            $upload = $this->handleUpload((string)$banner['size']);
+            if (isset($upload['error'])) {
+                header('Location: /advertiser/campaigns/' . $campaignUuid . '/banners/' . $bannerUuid . '/edit?error=' . urlencode($upload['error']));
+                exit;
+            }
+
+            $db->prepare('
+                UPDATE ad_banners
+                SET html = ?, status = "pending_review", updated_at = NOW()
+                WHERE uuid = ? AND campaign_id = ?
+            ')->execute([$upload['html'], $bannerUuid, $campaign['id']]);
+        } elseif (!$isImageBanner) {
+            $html = $this->sanitizeHtml($_POST['html'] ?? '');
+            if ($html === '') {
+                header('Location: /advertiser/campaigns/' . $campaignUuid . '/banners/' . $bannerUuid . '/edit?error=empty');
+                exit;
+            }
+
+            $db->prepare('
+                UPDATE ad_banners
+                SET html = ?, status = "pending_review", updated_at = NOW()
+                WHERE uuid = ? AND campaign_id = ?
+            ')->execute([$html, $bannerUuid, $campaign['id']]);
+        } else {
+            // Image banner with no new file selected: keep content, resubmit for review.
+            $db->prepare('
+                UPDATE ad_banners
+                SET status = "pending_review", updated_at = NOW()
+                WHERE uuid = ? AND campaign_id = ?
+            ')->execute([$bannerUuid, $campaign['id']]);
+        }
+
+        header('Location: /advertiser/campaigns/' . $campaignUuid . '/banners?saved=1');
+        exit;
+    }
+
     // ── Banner löschen ────────────────────────────────────────────────────
     public function delete(string $campaignUuid, string $bannerUuid): void
     {
