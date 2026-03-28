@@ -24,15 +24,21 @@ class ReferralService
     // ── Ref-Code für User holen/generieren ────────────────────────────────
     public function getRefCode(int $userId): string
     {
-        $stmt = $this->db->prepare('SELECT ref_code FROM users WHERE id = ? LIMIT 1');
-        $stmt->execute([$userId]);
-        $code = $stmt->fetchColumn();
+        try {
+            $stmt = $this->db->prepare('SELECT ref_code FROM users WHERE id = ? LIMIT 1');
+            $stmt->execute([$userId]);
+            $code = $stmt->fetchColumn();
 
-        if (!$code) {
-            $code = strtoupper(substr(md5($userId . time()), 0, 8));
-            $this->db->prepare('UPDATE users SET ref_code = ? WHERE id = ?')->execute([$code, $userId]);
+            if (!$code) {
+                $code = strtoupper(substr(md5($userId . time()), 0, 8));
+                $this->db->prepare('UPDATE users SET ref_code = ? WHERE id = ?')->execute([$code, $userId]);
+            }
+            return $code ?: strtoupper(substr(md5($userId), 0, 8));
+        } catch (\Exception $e) {
+            // ref_code column doesn't exist yet
+            error_log("ReferralService::getRefCode - " . $e->getMessage());
+            return strtoupper(substr(md5($userId), 0, 8));
         }
-        return $code;
     }
 
     // ── Referral bei Registrierung verarbeiten ────────────────────────────
@@ -173,39 +179,48 @@ class ReferralService
     // ── Statistiken für Dashboard ─────────────────────────────────────────
     public function getStats(int $userId): array
     {
-        // Direktgeworbene
-        $stmt = $this->db->prepare('
-            SELECT COUNT(*) AS total,
-                   SUM(CASE WHEN level=1 THEN 1 ELSE 0 END) AS level1,
-                   SUM(CASE WHEN level=2 THEN 1 ELSE 0 END) AS level2,
-                   SUM(CASE WHEN level=3 THEN 1 ELSE 0 END) AS level3
-            FROM referrals WHERE user_id = ?
-        ');
-        $stmt->execute([$userId]);
-        $counts = $stmt->fetch();
+        $counts = ['total' => 0, 'level1' => 0, 'level2' => 0, 'level3' => 0];
+        $earnings = ['total' => 0, 'from_earnings' => 0, 'from_spend' => 0, 'from_signup' => 0];
+        $referrals = [];
 
-        // Gesamtprovision
-        $stmt = $this->db->prepare('
-            SELECT COALESCE(SUM(commission),0) AS total,
-                   COALESCE(SUM(CASE WHEN type="earnings" THEN commission ELSE 0 END),0) AS from_earnings,
-                   COALESCE(SUM(CASE WHEN type="spend"    THEN commission ELSE 0 END),0) AS from_spend,
-                   COALESCE(SUM(CASE WHEN type="signup"   THEN commission ELSE 0 END),0) AS from_signup
-            FROM referral_earnings WHERE user_id = ?
-        ');
-        $stmt->execute([$userId]);
-        $earnings = $stmt->fetch();
+        try {
+            // Direktgeworbene
+            $stmt = $this->db->prepare('
+                SELECT COUNT(*) AS total,
+                       SUM(CASE WHEN level=1 THEN 1 ELSE 0 END) AS level1,
+                       SUM(CASE WHEN level=2 THEN 1 ELSE 0 END) AS level2,
+                       SUM(CASE WHEN level=3 THEN 1 ELSE 0 END) AS level3
+                FROM referrals WHERE user_id = ?
+            ');
+            $stmt->execute([$userId]);
+            $counts = (array)$stmt->fetch(\PDO::FETCH_ASSOC) + ['total' => 0, 'level1' => 0, 'level2' => 0, 'level3' => 0];
 
-        // Letzte Referrals
-        $stmt = $this->db->prepare('
-            SELECT r.*, u.username, u.created_at AS user_joined
-            FROM referrals r
-            JOIN users u ON u.id = r.referred_by
-            WHERE r.user_id = ?
-            ORDER BY r.created_at DESC
-            LIMIT 20
-        ');
-        $stmt->execute([$userId]);
-        $referrals = $stmt->fetchAll();
+            // Gesamtprovision
+            $stmt = $this->db->prepare('
+                SELECT COALESCE(SUM(commission),0) AS total,
+                       COALESCE(SUM(CASE WHEN type="earnings" THEN commission ELSE 0 END),0) AS from_earnings,
+                       COALESCE(SUM(CASE WHEN type="spend"    THEN commission ELSE 0 END),0) AS from_spend,
+                       COALESCE(SUM(CASE WHEN type="signup"   THEN commission ELSE 0 END),0) AS from_signup
+                FROM referral_earnings WHERE user_id = ?
+            ');
+            $stmt->execute([$userId]);
+            $earnings = (array)$stmt->fetch(\PDO::FETCH_ASSOC) + ['total' => 0, 'from_earnings' => 0, 'from_spend' => 0, 'from_signup' => 0];
+
+            // Letzte Referrals
+            $stmt = $this->db->prepare('
+                SELECT r.*, u.username, u.created_at AS user_joined
+                FROM referrals r
+                JOIN users u ON u.id = r.referred_by
+                WHERE r.user_id = ?
+                ORDER BY r.created_at DESC
+                LIMIT 20
+            ');
+            $stmt->execute([$userId]);
+            $referrals = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+        } catch (\Exception $e) {
+            // Tabellen existieren noch nicht - return Standardwerte
+            error_log("ReferralService::getStats - " . $e->getMessage());
+        }
 
         return compact('counts', 'earnings', 'referrals');
     }

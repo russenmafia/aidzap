@@ -50,6 +50,9 @@ session_start([
 ]);
 \Core\Lang::init();
 
+// Run pending migrations
+\Core\Migration::init();
+
 // Router
 require_once APP_PATH . '/Core/Router.php';
 $router = new Core\Router();

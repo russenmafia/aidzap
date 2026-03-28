@@ -60,14 +60,20 @@ class ReferralController
         $refLink = 'https://' . ($_SERVER['HTTP_HOST'] ?? 'aidzap.com') . '/r/' . $refCode;
         $stats   = $service->getStats($userId);
 
-        $db = Database::getInstance();
-        $settings = $db->query('SELECT social_messages FROM referral_settings WHERE id = 1 LIMIT 1')->fetch();
-        $socialMessages = json_decode($settings['social_messages'] ?? '[]', true) ?: [];
+        $socialMessages = [];
+        try {
+            $db = Database::getInstance();
+            $result = $db->query('SELECT social_messages FROM referral_settings WHERE id = 1 LIMIT 1')->fetch(\PDO::FETCH_ASSOC);
+            $socialMessages = json_decode($result['social_messages'] ?? '[]', true) ?: [];
 
-        foreach ($socialMessages as &$msg) {
-            $msg['text'] = str_replace('{ref_link}', $refLink, $msg['text']);
+            foreach ($socialMessages as &$msg) {
+                $msg['text'] = str_replace('{ref_link}', $refLink, $msg['text']);
+            }
+            unset($msg);
+        } catch (\Exception $e) {
+            // Tabelle existiert noch nicht - no social messages yet
+            error_log("ReferralController::dashboard - referral_settings: " . $e->getMessage());
         }
-        unset($msg);
 
         View::render('dashboard/referrals', [
             'title'          => __('referral.page_title'),
