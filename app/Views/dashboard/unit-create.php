@@ -71,18 +71,12 @@
     <!-- Banner Size (shown only for banner + sticky) -->
     <div class="field" id="field-size">
       <label>Banner Size</label>
+      <?php $sizes = $sizes ?? ['300x250' => 'Medium Rectangle (300x250)']; ?>
       <select name="size">
-        <?php foreach ([
-          '300x250' => 'Medium Rectangle (300×250)',
-          '728x90'  => 'Leaderboard (728×90)',
-          '160x600' => 'Wide Skyscraper (160×600)',
-          '320x50'  => 'Mobile Banner (320×50)',
-          '468x60'  => 'Full Banner (468×60)',
-          '250x250' => 'Square (250×250)',
-          '300x600' => 'Half Page (300×600)',
-        ] as $val => $label): ?>
-        <option value="<?= $val ?>" <?= ($old['size'] ?? '300x250') === $val ? 'selected' : '' ?>>
-          <?= $label ?>
+        <?php $defaultSize = (string)(array_key_first($sizes) ?: '300x250'); ?>
+        <?php foreach ($sizes as $val => $label): ?>
+        <option value="<?= htmlspecialchars((string)$val) ?>" <?= ($old['size'] ?? $defaultSize) === $val ? 'selected' : '' ?>>
+          <?= htmlspecialchars((string)$label) ?>
         </option>
         <?php endforeach; ?>
       </select>

@@ -37,9 +37,11 @@ class AdUnitController
     {
         Auth::require();
         $cats = Database::getInstance()->query('SELECT id, name FROM ad_categories WHERE is_active = 1 ORDER BY name')->fetchAll();
+        $sizes = $this->getActiveBannerSizes();
         View::render('dashboard/unit-create', [
             'title'      => 'New Ad Unit',
             'categories' => $cats,
+            'sizes'      => $sizes,
             'errors'     => [],
             'old'        => [],
             'csrf_token' => \Core\Auth::csrfToken(),
@@ -53,11 +55,15 @@ class AdUnitController
 
         $name    = trim($_POST['name'] ?? '');
         $url     = trim($_POST['website_url'] ?? '');
-        $size    = $_POST['size'] ?? '300x250';
+        $sizes   = $this->getActiveBannerSizes();
+        $size    = $_POST['size'] ?? ((string)(array_key_first($sizes) ?: '300x250'));
         $cat     = (int)($_POST['category_id'] ?? 0) ?: null;
         $errors  = [];
 
-        $validSizes = ['728x90','300x250','160x600','320x50','468x60','250x250','300x600'];
+        $validSizes = array_keys($sizes);
+        if (empty($validSizes)) {
+            $validSizes = ['300x250'];
+        }
 
         if (strlen($name) < 3)           $errors[] = 'Name must be at least 3 characters.';
         if (!filter_var($url, FILTER_VALIDATE_URL)) $errors[] = 'Please enter a valid website URL.';
@@ -68,8 +74,21 @@ class AdUnitController
             View::render('dashboard/unit-create', [
                 'title'      => 'New Ad Unit',
                 'categories' => $cats,
+                'sizes'      => $sizes,
                 'errors'     => $errors,
-                'old'        => compact('name','url','size','cat'),
+                'old'        => [
+                    'name' => $name,
+                    'website_url' => $url,
+                    'size' => $size,
+                    'category_id' => $cat,
+                    'type' => (string)($_POST['type'] ?? 'banner'),
+                    'sticky_position' => (string)($_POST['sticky_position'] ?? 'bottom'),
+                    'floor_price' => (string)($_POST['floor_price'] ?? '0'),
+                    'fallback_html' => (string)($_POST['fallback_html'] ?? ''),
+                    'native_title_max' => (string)($_POST['native_title_max'] ?? '60'),
+                    'native_desc_max' => (string)($_POST['native_desc_max'] ?? '120'),
+                    'native_css_class' => (string)($_POST['native_css_class'] ?? ''),
+                ],
                 'csrf_token' => \Core\Auth::csrfToken(),
             ], 'dashboard');
             return;
@@ -91,5 +110,36 @@ class AdUnitController
             mt_rand(0,0xffff),mt_rand(0,0xffff),mt_rand(0,0xffff),
             mt_rand(0,0x0fff)|0x4000, mt_rand(0,0x3fff)|0x8000,
             mt_rand(0,0xffff),mt_rand(0,0xffff),mt_rand(0,0xffff));
+    }
+
+    private function getActiveBannerSizes(): array
+    {
+        try {
+            $rows = Database::getInstance()->query('SELECT size_key, name, width, height FROM banner_formats WHERE is_active = 1 ORDER BY sort_order ASC, id ASC')->fetchAll();
+            $sizes = [];
+            foreach ($rows as $row) {
+                $key = (string)($row['size_key'] ?? '');
+                if ($key === '') {
+                    continue;
+                }
+
+                $name = trim((string)($row['name'] ?? ''));
+                $width = (int)($row['width'] ?? 0);
+                $height = (int)($row['height'] ?? 0);
+                $label = $name !== '' ? $name : $key;
+                if ($width > 0 && $height > 0) {
+                    $label .= ' (' . $width . 'x' . $height . ')';
+                }
+                $sizes[$key] = $label;
+            }
+
+            if (!empty($sizes)) {
+                return $sizes;
+            }
+        } catch (\Throwable $e) {
+            error_log('AdUnitController::getActiveBannerSizes - ' . $e->getMessage());
+        }
+
+        return ['300x250' => 'Medium Rectangle (300x250)'];
     }
 }

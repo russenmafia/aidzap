@@ -164,3 +164,8 @@ $router->get('/admin/finance', [\Controllers\AdminController::class, 'finance'])
 // System Overview
 $router->get('/admin/system',              [\Controllers\AdminController::class, 'system']);
 $router->post('/admin/system/clear-cache', [\Controllers\AdminController::class, 'clearCache']);
+$router->post('/admin/system/save-settings', [\Controllers\AdminController::class, 'saveSettings']);
+$router->post('/admin/system/banner-formats/create', [\Controllers\AdminController::class, 'createBannerFormat']);
+$router->post('/admin/system/banner-formats/update', [\Controllers\AdminController::class, 'updateBannerFormat']);
+$router->post('/admin/system/banner-formats/delete', [\Controllers\AdminController::class, 'deleteBannerFormat']);
+$router->post('/admin/system/mail/test', [\Controllers\AdminController::class, 'sendSystemTestMail']);

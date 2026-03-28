@@ -46,6 +46,34 @@ session_start([
 require_once APP_PATH . '/Core/Migration.php';
 \Core\Migration::init();
 
+// Optional maintenance mode for non-admin visitors.
+try {
+    $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+    if (!is_string($requestPath) || $requestPath === '') {
+        $requestPath = '/';
+    }
+
+    $isAdminSession = (string)($_SESSION['role'] ?? '') === 'admin';
+    $isAdminRoute = str_starts_with($requestPath, '/admin');
+    $allowDuringMaintenance = $isAdminRoute || in_array($requestPath, ['/login', '/register', '/logout', '/lang/en', '/lang/de'], true);
+
+    if (!$isAdminSession && !$allowDuringMaintenance) {
+        $db = \Core\Database::getInstance();
+        $rows = $db->query('SELECT `key`, `value` FROM site_settings WHERE `key` IN ("maintenance_mode", "maintenance_notice")')->fetchAll(\PDO::FETCH_KEY_PAIR);
+        $maintenanceMode = (string)($rows['maintenance_mode'] ?? '0');
+
+        if ($maintenanceMode === '1') {
+            $notice = (string)($rows['maintenance_notice'] ?? 'We are back soon.');
+            http_response_code(503);
+            header('Content-Type: text/html; charset=UTF-8');
+            echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Maintenance</title></head><body style="margin:0;background:#070b10;color:#dce7f0;font-family:Arial,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:20px"><div style="max-width:680px;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:28px;background:rgba(255,255,255,.03)"><h1 style="margin:0 0 12px;font-size:28px;color:#3ecf8e">Maintenance Mode</h1><p style="margin:0;font-size:16px;line-height:1.6">' . htmlspecialchars($notice, ENT_QUOTES, 'UTF-8') . '</p></div></body></html>';
+            exit;
+        }
+    }
+} catch (\Throwable $e) {
+    error_log('public/index maintenance_mode - ' . $e->getMessage());
+}
+
 require_once APP_PATH . '/Core/Router.php';
 $router = new Core\Router();
 require_once CONFIG_PATH . '/routes.php';

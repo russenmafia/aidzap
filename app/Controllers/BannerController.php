@@ -52,11 +52,13 @@ class BannerController
 
         // Templates aus DB oder Hardcode
         $templates = $this->getTemplates();
+        $sizes = $this->getActiveBannerSizes();
 
         View::render('dashboard/banner-create', [
             'title'      => 'New Banner',
             'active'     => 'banners',
             'campaign'   => $campaign,
+            'sizes'      => $sizes,
             'templates'  => $templates,
             'csrf_token' => \Core\Auth::csrfToken(),
             'errors'     => [],
@@ -74,11 +76,15 @@ class BannerController
         if (!$campaign) { http_response_code(404); return; }
 
         $method  = $_POST['method'] ?? 'html'; // html, template, upload, ai
-        $size    = $_POST['size'] ?? '300x250';
+        $sizes   = $this->getActiveBannerSizes();
+        $size    = $_POST['size'] ?? ((string)(array_key_first($sizes) ?: '300x250'));
         $name    = trim($_POST['name'] ?? '');
         $errors  = [];
 
-        $validSizes = ['728x90','300x250','160x600','320x50','468x60','250x250','300x600'];
+        $validSizes = array_keys($sizes);
+        if (empty($validSizes)) {
+            $validSizes = ['300x250'];
+        }
         if (!in_array($size, $validSizes, true)) $errors[] = 'Invalid size.';
         if (strlen($name) < 2) $errors[] = 'Name required.';
 
@@ -123,6 +129,7 @@ class BannerController
                 'title'      => 'New Banner',
                 'active'     => 'banners',
                 'campaign'   => $campaign,
+                'sizes'      => $sizes,
                 'templates'  => $this->getTemplates(),
                 'csrf_token' => \Core\Auth::csrfToken(),
                 'errors'     => $errors,
@@ -336,6 +343,37 @@ class BannerController
         ');
         $stmt->execute([$uuid, Auth::id()]);
         return $stmt->fetch() ?: null;
+    }
+
+    private function getActiveBannerSizes(): array
+    {
+        try {
+            $rows = Database::getInstance()->query('SELECT size_key, name, width, height FROM banner_formats WHERE is_active = 1 ORDER BY sort_order ASC, id ASC')->fetchAll();
+            $sizes = [];
+            foreach ($rows as $row) {
+                $key = (string)($row['size_key'] ?? '');
+                if ($key === '') {
+                    continue;
+                }
+
+                $name = trim((string)($row['name'] ?? ''));
+                $width = (int)($row['width'] ?? 0);
+                $height = (int)($row['height'] ?? 0);
+                $label = $name !== '' ? $name : $key;
+                if ($width > 0 && $height > 0) {
+                    $label .= ' (' . $width . 'x' . $height . ')';
+                }
+                $sizes[$key] = $label;
+            }
+
+            if (!empty($sizes)) {
+                return $sizes;
+            }
+        } catch (\Throwable $e) {
+            error_log('BannerController::getActiveBannerSizes - ' . $e->getMessage());
+        }
+
+        return ['300x250' => 'Medium Rectangle (300x250)'];
     }
 
     private function sanitizeHtml(string $html): string

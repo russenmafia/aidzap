@@ -1,270 +1,326 @@
-<?php $active = 'system'; ?>
-
-<div class="page-header">
-  <h1 class="page-title">System Overview</h1>
-  <span style="font-size:12px;color:rgba(255,255,255,0.3);font-family:'DM Mono',monospace"><?= date('d.m.Y H:i:s') ?></span>
-</div>
-
 <?php
-$db = \Core\Database::getInstance();
-
-// ── Umgebung ──────────────────────────────────────────────────────────────
-$phpVersion  = PHP_VERSION;
-$serverSoft  = $_SERVER['SERVER_SOFTWARE'] ?? 'Unknown';
-$appEnv      = $_ENV['APP_ENV'] ?? 'production';
-$appDebug    = ($_ENV['APP_DEBUG'] ?? 'false') === 'true';
-$appUrl      = $_ENV['APP_URL'] ?? 'https://aidzap.com';
-$diskFree    = disk_free_space('/');
-$diskTotal   = disk_total_space('/');
-$diskUsedPct = $diskTotal > 0 ? round((1 - $diskFree / $diskTotal) * 100) : 0;
-$memLimit    = ini_get('memory_limit');
-$uploadMax   = ini_get('upload_max_filesize');
-$maxExec     = ini_get('max_execution_time');
-
-// ── Datenbank ─────────────────────────────────────────────────────────────
-$dbVersion  = $db->query('SELECT VERSION()')->fetchColumn();
-$dbSize     = $db->query("
-    SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2)
-    FROM information_schema.tables
-    WHERE table_schema = DATABASE()
-")->fetchColumn();
-
-$tableRows = $db->query("
-    SELECT table_name, table_rows, ROUND((data_length + index_length)/1024,1) AS size_kb
-    FROM information_schema.tables
-    WHERE table_schema = DATABASE()
-    ORDER BY table_rows DESC
-")->fetchAll();
-
-// ── API Status ────────────────────────────────────────────────────────────
-function checkApi(string $url, array $headers = []): array {
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 5,
-        CURLOPT_HTTPHEADER     => $headers,
-    ]);
-    $result   = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $error    = curl_error($ch);
-    curl_close($ch);
-    return ['code' => $httpCode, 'error' => $error, 'body' => $result];
+$active = 'system';
+$tab = (string)($_GET['tab'] ?? 'site');
+if (!in_array($tab, ['site', 'formats', 'mail', 'maintenance'], true)) {
+    $tab = 'site';
 }
 
-// NOWPayments
-$npKey    = $_ENV['NOWPAYMENTS_API_KEY'] ?? '';
-$npStatus = !empty($npKey) ? checkApi('https://api.nowpayments.io/v1/status', ['x-api-key: ' . $npKey]) : ['code' => 0];
-$npOk     = ($npStatus['code'] === 200 && str_contains($npStatus['body'] ?? '', 'OK'));
+$settings = $settings ?? [];
+$bannerFormats = $bannerFormats ?? [];
+$csrf = (string)($csrf_token ?? '');
 
-// Anthropic
-$anKey    = $_ENV['ANTHROPIC_API_KEY'] ?? '';
-$anOk     = !empty($anKey);
-
-// ── Kennzahlen ────────────────────────────────────────────────────────────
-$stats = [];
-$stats['users_total']      = (int)$db->query('SELECT COUNT(*) FROM users')->fetchColumn();
-$stats['users_today']      = (int)$db->query("SELECT COUNT(*) FROM users WHERE DATE(created_at) = CURDATE()")->fetchColumn();
-$stats['campaigns_active'] = (int)$db->query("SELECT COUNT(*) FROM campaigns WHERE status='active'")->fetchColumn();
-$stats['campaigns_total']  = (int)$db->query("SELECT COUNT(*) FROM campaigns")->fetchColumn();
-$stats['banners_active']   = (int)$db->query("SELECT COUNT(*) FROM ad_banners WHERE status='active'")->fetchColumn();
-$stats['units_active']     = (int)$db->query("SELECT COUNT(*) FROM ad_units WHERE status='active'")->fetchColumn();
-$stats['impressions_total']= (int)$db->query("SELECT COUNT(*) FROM impressions")->fetchColumn();
-$stats['impressions_today']= (int)$db->query("SELECT COUNT(*) FROM impressions WHERE DATE(created_at)=CURDATE()")->fetchColumn();
-$stats['clicks_total']     = (int)$db->query("SELECT COUNT(*) FROM clicks")->fetchColumn();
-$stats['revenue_total']    = (float)$db->query("SELECT COALESCE(SUM(cost),0) FROM impressions WHERE is_fraud=0")->fetchColumn();
-$stats['fraud_total']      = (int)$db->query("SELECT COUNT(*) FROM impressions WHERE is_fraud=1")->fetchColumn();
-$stats['blacklisted']      = (int)$db->query("SELECT COUNT(*) FROM ip_blacklist WHERE expires_at IS NULL OR expires_at > NOW()")->fetchColumn();
-$stats['pending_review']   = (int)$db->query("SELECT COUNT(*) FROM ad_banners WHERE status='pending_review'")->fetchColumn()
-                           + (int)$db->query("SELECT COUNT(*) FROM ad_units WHERE status='pending_review'")->fetchColumn();
-$stats['total_balance']    = (float)$db->query("SELECT COALESCE(SUM(amount),0) FROM balances WHERE currency='BTC'")->fetchColumn();
-$stats['referrals_total']  = (int)$db->query("SELECT COUNT(*) FROM referrals")->fetchColumn();
-
-// Cron letzte Ausführung
-$lastCron = '';
-$logFile  = BASE_PATH . '/storage/logs/cron.log';
-if (file_exists($logFile)) {
-    $lines = array_filter(explode("\n", file_get_contents($logFile)));
-    $last  = end($lines);
-    $lastCron = $last ? substr($last, 0, 60) : 'No entries';
-}
-
-// Git Info
-$gitBranch  = trim(shell_exec('cd ' . BASE_PATH . ' && git rev-parse --abbrev-ref HEAD 2>/dev/null') ?? '');
-$gitCommit  = trim(shell_exec('cd ' . BASE_PATH . ' && git log -1 --format="%h %s" 2>/dev/null') ?? '');
-$gitDate    = trim(shell_exec('cd ' . BASE_PATH . ' && git log -1 --format="%ci" 2>/dev/null') ?? '');
-
-// Upload-Ordner
-$uploadDir  = BASE_PATH . '/uploads/banners/';
-$uploadFiles= is_dir($uploadDir) ? count(glob($uploadDir . '*')) : 0;
-$uploadSize = 0;
-if (is_dir($uploadDir)) {
-    foreach (glob($uploadDir . '*') as $f) $uploadSize += filesize($f);
-}
+$mask = static function (string $value): string {
+    if ($value === '') {
+        return '(not set)';
+    }
+    $len = strlen($value);
+    if ($len <= 6) {
+        return str_repeat('*', $len);
+    }
+    return substr($value, 0, 3) . str_repeat('*', max(0, $len - 6)) . substr($value, -3);
+};
 ?>
 
-<!-- Metric Cards -->
-<div class="admin-metrics" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px">
-  <div class="metric">
-    <div class="metric-label">Total Users</div>
-    <div class="metric-val"><?= number_format($stats['users_total']) ?></div>
-    <div class="metric-sub">+<?= $stats['users_today'] ?> today</div>
-  </div>
-  <div class="metric">
-    <div class="metric-label">Active Campaigns</div>
-    <div class="metric-val"><?= $stats['campaigns_active'] ?></div>
-    <div class="metric-sub"><?= $stats['campaigns_total'] ?> total</div>
-  </div>
-  <div class="metric">
-    <div class="metric-label">Total Impressions</div>
-    <div class="metric-val"><?= number_format($stats['impressions_total']) ?></div>
-    <div class="metric-sub"><?= number_format($stats['impressions_today']) ?> today</div>
-  </div>
-  <div class="metric">
-    <div class="metric-label">Total Revenue</div>
-    <div class="metric-val green"><?= number_format($stats['revenue_total'], 8) ?></div>
-    <div class="metric-sub">BTC gross</div>
-  </div>
+<div class="page-header">
+  <h1 class="page-title">System Settings</h1>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+<?php if (isset($_GET['saved'])): ?>
+<div class="flash flash-success">Settings saved.</div>
+<?php endif; ?>
+<?php if (isset($_GET['error'])): ?>
+<div class="flash flash-error">Please check your input.</div>
+<?php endif; ?>
+<?php if (isset($_GET['mail_test']) && $_GET['mail_test'] === 'ok'): ?>
+<div class="flash flash-success">Test email sent successfully.</div>
+<?php elseif (isset($_GET['mail_test']) && $_GET['mail_test'] === 'fail'): ?>
+<div class="flash flash-error">Test email failed. Check mail settings.</div>
+<?php elseif (isset($_GET['mail_test']) && $_GET['mail_test'] === 'invalid'): ?>
+<div class="flash flash-error">Please provide a valid test email address.</div>
+<?php endif; ?>
 
-<!-- Umgebung -->
-<div class="admin-section">
-  <div class="section-bar" style="padding:14px 20px"><h2 class="section-title">Environment</h2></div>
-  <div style="padding:16px 20px">
-    <?php foreach ([
-      ['PHP Version',     $phpVersion,  version_compare($phpVersion, '8.2', '>=') ? 'green' : 'red'],
-      ['App Environment', $appEnv,      $appEnv === 'production' ? 'green' : 'yellow'],
-      ['Debug Mode',      $appDebug ? 'ON' : 'OFF', $appDebug ? 'red' : 'green'],
-      ['App URL',         $appUrl,      ''],
-      ['Memory Limit',    $memLimit,    ''],
-      ['Upload Max',      $uploadMax,   ''],
-      ['Max Exec Time',   $maxExec . 's', ''],
-      ['Disk Usage',      $diskUsedPct . '% (' . round($diskFree/1024/1024/1024, 1) . ' GB free)', $diskUsedPct > 80 ? 'red' : 'green'],
-    ] as [$label, $value, $color]): ?>
-    <div class="summary-row">
-      <span class="summary-label"><?= $label ?></span>
-      <span class="summary-val <?= $color ?>" style="font-family:'DM Mono',monospace;font-size:12px"><?= htmlspecialchars($value) ?></span>
-    </div>
-    <?php endforeach; ?>
-  </div>
+<div style="display:flex;gap:4px;margin-bottom:24px;border-bottom:0.5px solid rgba(255,255,255,0.08);padding-bottom:0">
+  <?php foreach (['site' => 'Site', 'formats' => 'Banner Formats', 'mail' => 'Mail / SMTP', 'maintenance' => 'Maintenance'] as $t => $label): ?>
+  <a href="/admin/system?tab=<?= htmlspecialchars($t) ?>"
+     style="padding:10px 20px;font-size:13px;text-decoration:none;border-radius:8px 8px 0 0;color:<?= $tab === $t ? '#3ecf8e' : 'rgba(255,255,255,0.4)' ?>;background:<?= $tab === $t ? 'rgba(62,207,142,0.08)' : 'transparent' ?>;border-bottom:<?= $tab === $t ? '2px solid #3ecf8e' : '2px solid transparent' ?>">
+    <?= htmlspecialchars($label) ?>
+  </a>
+  <?php endforeach; ?>
 </div>
 
-<!-- API Status -->
+<?php if ($tab === 'site'): ?>
 <div class="admin-section">
-  <div class="section-bar" style="padding:14px 20px"><h2 class="section-title">API & Services</h2></div>
-  <div style="padding:16px 20px">
-    <?php foreach ([
-      ['NOWPayments',    $npOk,    $npOk ? 'Connected' : 'Error', empty($npKey) ? 'Not configured' : ''],
-      ['Anthropic (AI)', $anOk,    $anOk ? 'Key set' : 'Not configured', ''],
-      ['IPN Webhook',    !empty($_ENV['NOWPAYMENTS_IPN_SECRET']), 'Secret set', 'Not configured'],
-      ['App Secret',     !empty($_ENV['APP_SECRET']), 'Set', 'Missing!'],
-    ] as [$name, $ok, $okText, $failText]): ?>
-    <div class="summary-row">
-      <span class="summary-label"><?= $name ?></span>
-      <span style="font-size:12px;color:<?= $ok ? '#3ecf8e' : '#e05454' ?>">
-        <?= $ok ? '✓ ' . $okText : '✗ ' . ($failText ?: 'Error') ?>
-      </span>
-    </div>
-    <?php endforeach; ?>
+  <div class="section-bar" style="padding:14px 20px"><h2 class="section-title">General Site Settings</h2></div>
+  <div style="padding:20px">
+    <form method="POST" action="/admin/system/save-settings">
+      <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+      <input type="hidden" name="redirect_tab" value="site">
 
-    <div class="summary-divider"></div>
+      <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:16px">
+        <div class="field">
+          <label>Site Name</label>
+          <input type="text" name="site_name" value="<?= htmlspecialchars((string)($settings['site_name'] ?? 'aidzap.com')) ?>" required>
+        </div>
+        <div class="field">
+          <label>Site URL</label>
+          <input type="text" name="site_url" value="<?= htmlspecialchars((string)($settings['site_url'] ?? 'https://aidzap.com')) ?>" required>
+        </div>
+        <div class="field">
+          <label>Site Email</label>
+          <input type="email" name="site_email" value="<?= htmlspecialchars((string)($settings['site_email'] ?? '')) ?>">
+        </div>
+        <div class="field">
+          <label>Support Email</label>
+          <input type="email" name="support_email" value="<?= htmlspecialchars((string)($settings['support_email'] ?? '')) ?>">
+        </div>
+      </div>
 
-    <?php foreach ([
-      ['Active Ad Units',   $stats['units_active']],
-      ['Active Banners',    $stats['banners_active']],
-      ['Pending Review',    $stats['pending_review']],
-      ['Fraud Blocked IPs', $stats['blacklisted']],
-      ['Referrals',         $stats['referrals_total']],
-      ['Total BTC Balance', number_format($stats['total_balance'], 8) . ' BTC'],
-      ['Banner Uploads',    $uploadFiles . ' files (' . round($uploadSize/1024, 1) . ' KB)'],
-    ] as [$label, $value]): ?>
-    <div class="summary-row">
-      <span class="summary-label"><?= $label ?></span>
-      <span class="summary-val" style="font-family:'DM Mono',monospace;font-size:12px"><?= htmlspecialchars((string)$value) ?></span>
-    </div>
-    <?php endforeach; ?>
-  </div>
-</div>
+      <div style="margin-top:20px;padding:14px;background:#080c10;border-radius:10px;border:0.5px solid rgba(255,255,255,0.08)">
+        <label class="checkbox-label" style="display:flex;align-items:center;gap:10px">
+          <input id="ga_enabled" type="checkbox" name="ga_enabled" value="1" <?= !empty($settings['ga_enabled']) && $settings['ga_enabled'] !== '0' ? 'checked' : '' ?> style="accent-color:#3ecf8e">
+          <span>Google Analytics enabled</span>
+        </label>
+        <div id="ga_id_wrap" style="margin-top:12px;<?= (!empty($settings['ga_enabled']) && $settings['ga_enabled'] !== '0') ? '' : 'display:none' ?>">
+          <label style="display:block;font-size:12px;color:rgba(255,255,255,0.6);margin-bottom:6px">GA Measurement ID</label>
+          <input type="text" name="ga_id" placeholder="G-XXXXXXXXXX" value="<?= htmlspecialchars((string)($settings['ga_id'] ?? '')) ?>" style="width:100%;background:#0d1217;border:0.5px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;color:#fff">
+        </div>
+      </div>
 
-</div><!-- /grid -->
-
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
-
-<!-- Git Info -->
-<div class="admin-section">
-  <div class="section-bar" style="padding:14px 20px"><h2 class="section-title">Deployment</h2></div>
-  <div style="padding:16px 20px">
-    <?php foreach ([
-      ['Branch',         $gitBranch ?: 'N/A'],
-      ['Last Commit',    $gitCommit ?: 'N/A'],
-      ['Commit Date',    $gitDate   ?: 'N/A'],
-      ['Last Cron',      $lastCron  ?: 'No log'],
-    ] as [$label, $value]): ?>
-    <div class="summary-row" style="align-items:flex-start">
-      <span class="summary-label" style="flex-shrink:0"><?= $label ?></span>
-      <span class="summary-val" style="font-family:'DM Mono',monospace;font-size:11px;word-break:break-all;text-align:right"><?= htmlspecialchars($value) ?></span>
-    </div>
-    <?php endforeach; ?>
-    <div class="summary-divider"></div>
-    <form method="POST" action="/admin/system/clear-cache" style="display:inline">
-      <button class="btn-ghost-sm">Clear OPcache</button>
+      <div style="margin-top:20px">
+        <button class="btn-primary" type="submit">Save Site Settings</button>
+      </div>
     </form>
   </div>
 </div>
+<?php endif; ?>
 
-<!-- Datenbank -->
-<div class="admin-section">
-  <div class="section-bar" style="padding:14px 20px"><h2 class="section-title">Database</h2></div>
-  <div style="padding:16px 20px">
-    <div class="summary-row">
-      <span class="summary-label">MySQL Version</span>
-      <span class="summary-val" style="font-family:'DM Mono',monospace;font-size:12px"><?= htmlspecialchars($dbVersion) ?></span>
-    </div>
-    <div class="summary-row">
-      <span class="summary-label">DB Size</span>
-      <span class="summary-val" style="font-family:'DM Mono',monospace;font-size:12px"><?= $dbSize ?> MB</span>
-    </div>
-    <div class="summary-divider"></div>
-    <div style="max-height:200px;overflow-y:auto">
-    <?php foreach ($tableRows as $t): ?>
-    <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid rgba(255,255,255,0.04);font-size:11px">
-      <span style="font-family:'DM Mono',monospace;color:rgba(255,255,255,0.5)"><?= htmlspecialchars($t['table_name']) ?></span>
-      <span style="color:rgba(255,255,255,0.3)"><?= number_format((int)$t['table_rows']) ?> rows · <?= $t['size_kb'] ?> KB</span>
-    </div>
-    <?php endforeach; ?>
-    </div>
-  </div>
-</div>
-
-</div><!-- /grid -->
-
-<!-- Features Status -->
-<div class="admin-section">
-  <div class="section-bar" style="padding:14px 20px"><h2 class="section-title">Feature Status</h2></div>
-  <div style="padding:16px 20px">
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
-      <?php
-      $refSettings = $db->query('SELECT * FROM referral_settings WHERE id=1 LIMIT 1')->fetch();
-      $features = [
-        ['Ad Serving',         true,                              'Core feature'],
-        ['Fraud Detection',    true,                              'Active'],
-        ['NOWPayments',        $npOk,                             $npOk ? 'Connected' : 'Check API key'],
-        ['AI Banner Generator',$refSettings['ai_banner_enabled'] ?? 0, 'Price: ' . number_format((float)($refSettings['ai_banner_price'] ?? 0), 8) . ' BTC'],
-        ['Referral System',    $refSettings['is_active'] ?? 0,   'L1: ' . ($refSettings['level1_pct'] ?? 0) . '% / L2: ' . ($refSettings['level2_pct'] ?? 0) . '% / L3: ' . ($refSettings['level3_pct'] ?? 0) . '%'],
-        ['MetaMask Login',     true,                              'SIWE enabled'],
-        ['Cron Jobs',          file_exists(BASE_PATH . '/storage/logs/cron.log'), 'Check /admin/crons'],
-        ['SEO',                true,                              'Sitemap + OG Image'],
-      ];
-      foreach ($features as [$name, $active, $desc]): ?>
-      <div style="background:#080c10;border:0.5px solid rgba(255,255,255,<?= $active ? '0.1' : '0.05' ?>);border-radius:10px;padding:14px">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <span style="width:8px;height:8px;border-radius:50%;background:<?= $active ? '#3ecf8e' : '#e05454' ?>;flex-shrink:0"></span>
-          <span style="font-size:13px;font-weight:500;color:<?= $active ? '#fff' : 'rgba(255,255,255,0.4)' ?>"><?= htmlspecialchars($name) ?></span>
+<?php if ($tab === 'formats'): ?>
+<div style="display:grid;grid-template-columns:1fr;gap:20px">
+  <div class="admin-section">
+    <div class="section-bar" style="padding:14px 20px"><h2 class="section-title">Add New Banner Format</h2></div>
+    <div style="padding:20px">
+      <form method="POST" action="/admin/system/banner-formats/create" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:10px;align-items:end">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+        <div class="field" style="margin:0">
+          <label>Name</label>
+          <input type="text" name="name" required placeholder="e.g. Medium Rectangle">
         </div>
-        <div style="font-size:11px;color:rgba(255,255,255,0.3)"><?= htmlspecialchars($desc) ?></div>
-      </div>
-      <?php endforeach; ?>
+        <div class="field" style="margin:0">
+          <label>Width</label>
+          <input type="number" name="width" min="1" value="300" required>
+        </div>
+        <div class="field" style="margin:0">
+          <label>Height</label>
+          <input type="number" name="height" min="1" value="250" required>
+        </div>
+        <div class="field" style="margin:0">
+          <label>Sort Order</label>
+          <input type="number" name="sort_order" value="0">
+        </div>
+        <label class="checkbox-label" style="margin-bottom:10px;display:flex;align-items:center;gap:8px">
+          <input type="checkbox" name="is_active" value="1" checked style="accent-color:#3ecf8e">
+          <span>Active</span>
+        </label>
+        <div style="grid-column:1/-1">
+          <button class="btn-primary" type="submit">Add Format</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="admin-section">
+    <div class="section-bar" style="padding:14px 20px"><h2 class="section-title">Existing Banner Formats</h2></div>
+    <div style="padding:20px;overflow:auto">
+      <table class="admin-table" style="width:100%">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Size</th>
+            <th>Active</th>
+            <th>Sort</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php if (empty($bannerFormats)): ?>
+          <tr><td colspan="5" style="opacity:.6">No banner formats found.</td></tr>
+          <?php endif; ?>
+          <?php foreach ($bannerFormats as $fmt): ?>
+          <tr>
+            <td>
+              <form method="POST" action="/admin/system/banner-formats/update" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+                <input type="hidden" name="id" value="<?= (int)$fmt['id'] ?>">
+                <input type="text" name="name" value="<?= htmlspecialchars((string)$fmt['name']) ?>" required style="min-width:180px">
+            </td>
+            <td>
+                <div style="display:flex;gap:6px;align-items:center">
+                  <input type="number" name="width" min="1" value="<?= (int)$fmt['width'] ?>" style="width:90px">
+                  <span>x</span>
+                  <input type="number" name="height" min="1" value="<?= (int)$fmt['height'] ?>" style="width:90px">
+                </div>
+            </td>
+            <td>
+                <label class="checkbox-label" style="display:flex;align-items:center;gap:6px">
+                  <input type="checkbox" name="is_active" value="1" <?= (int)$fmt['is_active'] === 1 ? 'checked' : '' ?> style="accent-color:#3ecf8e">
+                  <span><?= (int)$fmt['is_active'] === 1 ? 'Yes' : 'No' ?></span>
+                </label>
+            </td>
+            <td>
+                <input type="number" name="sort_order" value="<?= (int)$fmt['sort_order'] ?>" style="width:90px">
+            </td>
+            <td>
+                <button class="btn-ghost-sm" type="submit">Update</button>
+              </form>
+              <form method="POST" action="/admin/system/banner-formats/delete" style="display:inline-block;margin-top:8px" onsubmit="return confirm('Delete this format?')">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+                <input type="hidden" name="id" value="<?= (int)$fmt['id'] ?>">
+                <button class="btn-danger-sm" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>
+<?php endif; ?>
+
+<?php if ($tab === 'mail'): ?>
+<div class="admin-section">
+  <div class="section-bar" style="padding:14px 20px"><h2 class="section-title">Mail / SMTP</h2></div>
+  <div style="padding:20px">
+    <form method="POST" action="/admin/system/save-settings">
+      <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+      <input type="hidden" name="redirect_tab" value="mail">
+
+      <div style="margin-bottom:16px">
+        <label class="checkbox-label" style="display:flex;align-items:center;gap:10px">
+          <input id="smtp_enabled" type="checkbox" name="smtp_enabled" value="1" <?= !empty($settings['smtp_enabled']) && $settings['smtp_enabled'] !== '0' ? 'checked' : '' ?> style="accent-color:#3ecf8e">
+          <span>SMTP enabled</span>
+        </label>
+      </div>
+
+      <div id="smtp_fields" class="form-grid" style="grid-template-columns:1fr 1fr;gap:16px;<?= (!empty($settings['smtp_enabled']) && $settings['smtp_enabled'] !== '0') ? '' : 'opacity:.7' ?>">
+        <div class="field">
+          <label>SMTP Host</label>
+          <input type="text" name="smtp_host" value="<?= htmlspecialchars((string)($settings['smtp_host'] ?? '')) ?>">
+        </div>
+        <div class="field">
+          <label>SMTP Port</label>
+          <input type="number" name="smtp_port" min="1" value="<?= htmlspecialchars((string)($settings['smtp_port'] ?? '587')) ?>">
+        </div>
+        <div class="field">
+          <label>SMTP User</label>
+          <input type="text" name="smtp_user" value="<?= htmlspecialchars((string)($settings['smtp_user'] ?? '')) ?>">
+        </div>
+        <div class="field">
+          <label>SMTP Password</label>
+          <input type="password" name="smtp_pass" value="<?= htmlspecialchars((string)($settings['smtp_pass'] ?? '')) ?>">
+        </div>
+        <div class="field">
+          <label>From Email</label>
+          <input type="email" name="smtp_from_email" value="<?= htmlspecialchars((string)($settings['smtp_from_email'] ?? '')) ?>">
+        </div>
+        <div class="field">
+          <label>From Name</label>
+          <input type="text" name="smtp_from_name" value="<?= htmlspecialchars((string)($settings['smtp_from_name'] ?? 'aidzap.com')) ?>">
+        </div>
+        <div class="field">
+          <label>Encryption</label>
+          <?php $enc = (string)($settings['smtp_encryption'] ?? 'tls'); ?>
+          <select name="smtp_encryption">
+            <option value="tls" <?= $enc === 'tls' ? 'selected' : '' ?>>TLS</option>
+            <option value="ssl" <?= $enc === 'ssl' ? 'selected' : '' ?>>SSL</option>
+            <option value="none" <?= $enc === 'none' ? 'selected' : '' ?>>None</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:16px">
+        <label class="checkbox-label" style="display:flex;align-items:center;gap:10px">
+          <input type="checkbox" name="double_optin" value="1" <?= !empty($settings['double_optin']) && $settings['double_optin'] !== '0' ? 'checked' : '' ?> style="accent-color:#3ecf8e">
+          <span>Double opt-in enabled</span>
+        </label>
+        <label class="checkbox-label" style="display:flex;align-items:center;gap:10px">
+          <input type="checkbox" name="newsletter_enabled" value="1" <?= !empty($settings['newsletter_enabled']) && $settings['newsletter_enabled'] !== '0' ? 'checked' : '' ?> style="accent-color:#3ecf8e">
+          <span>Newsletter enabled</span>
+        </label>
+      </div>
+
+      <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn-primary" type="submit">Save Mail Settings</button>
+      </div>
+    </form>
+
+    <form method="POST" action="/admin/system/mail/test" style="margin-top:14px;display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+      <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+      <div class="field" style="margin:0;min-width:280px">
+        <label>Test Email Recipient</label>
+        <input type="email" name="test_email" value="<?= htmlspecialchars((string)($settings['support_email'] ?? $settings['site_email'] ?? '')) ?>" placeholder="admin@example.com">
+      </div>
+      <button class="btn-ghost-sm" type="submit">Send Test Email</button>
+    </form>
+  </div>
+</div>
+<?php endif; ?>
+
+<?php if ($tab === 'maintenance'): ?>
+<div class="admin-section">
+  <div class="section-bar" style="padding:14px 20px"><h2 class="section-title">Maintenance & Security</h2></div>
+  <div style="padding:20px">
+    <form method="POST" action="/admin/system/save-settings">
+      <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+      <input type="hidden" name="redirect_tab" value="maintenance">
+
+      <div style="margin-bottom:16px;padding:14px;background:#080c10;border-radius:10px;border:0.5px solid rgba(255,255,255,0.08)">
+        <label class="checkbox-label" style="display:flex;align-items:center;gap:10px">
+          <input type="checkbox" name="maintenance_mode" value="1" <?= !empty($settings['maintenance_mode']) && $settings['maintenance_mode'] !== '0' ? 'checked' : '' ?> style="accent-color:#3ecf8e">
+          <span>Maintenance mode enabled (non-admin visitors will see notice page)</span>
+        </label>
+      </div>
+
+      <div class="field full">
+        <label>Maintenance Notice</label>
+        <textarea name="maintenance_notice" rows="4" style="width:100%" placeholder="We are back soon."><?= htmlspecialchars((string)($settings['maintenance_notice'] ?? 'We are back soon.')) ?></textarea>
+      </div>
+
+      <div style="margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="field">
+          <label>Turnstile Site Key (.env)</label>
+          <input type="text" value="<?= htmlspecialchars($mask((string)($turnstileSiteKey ?? ''))) ?>" readonly>
+        </div>
+        <div class="field">
+          <label>Turnstile Secret Key (.env)</label>
+          <input type="password" value="<?= htmlspecialchars($mask((string)($turnstileSecretKey ?? ''))) ?>" readonly>
+        </div>
+      </div>
+
+      <div style="margin-top:20px">
+        <button class="btn-primary" type="submit">Save Maintenance Settings</button>
+      </div>
+    </form>
+  </div>
+</div>
+<?php endif; ?>
+
+<script>
+(function () {
+  const gaToggle = document.getElementById('ga_enabled');
+  const gaWrap = document.getElementById('ga_id_wrap');
+  if (gaToggle && gaWrap) {
+    gaToggle.addEventListener('change', function () {
+      gaWrap.style.display = this.checked ? '' : 'none';
+    });
+  }
+
+  const smtpToggle = document.getElementById('smtp_enabled');
+  const smtpFields = document.getElementById('smtp_fields');
+  if (smtpToggle && smtpFields) {
+    smtpToggle.addEventListener('change', function () {
+      smtpFields.style.opacity = this.checked ? '1' : '0.7';
+    });
+  }
+})();
+</script>

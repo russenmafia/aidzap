@@ -7,6 +7,7 @@ use Core\AdminAuth;
 use Core\Auth;
 use Core\Database;
 use Core\View;
+use Services\MailService;
 
 class AdminController
 {
@@ -494,10 +495,197 @@ class AdminController
     public function system(): void
     {
         AdminAuth::require();
+        $db = Database::getInstance();
+
+        $defaults = [
+            'site_name' => 'aidzap.com',
+            'site_url' => 'https://aidzap.com',
+            'site_email' => 'noreply@aidzap.com',
+            'support_email' => 'support@aidzap.com',
+            'ga_enabled' => '0',
+            'ga_id' => '',
+            'smtp_enabled' => '0',
+            'smtp_host' => '',
+            'smtp_port' => '587',
+            'smtp_user' => '',
+            'smtp_pass' => '',
+            'smtp_from_email' => '',
+            'smtp_from_name' => 'aidzap.com',
+            'smtp_encryption' => 'tls',
+            'double_optin' => '0',
+            'maintenance_mode' => '0',
+            'maintenance_notice' => 'We are back soon.',
+            'newsletter_enabled' => '0',
+        ];
+
+        $settings = $defaults;
+        try {
+            $settingsRows = $db->query('SELECT `key`, `value` FROM site_settings')->fetchAll();
+            foreach ($settingsRows as $row) {
+                if (isset($row['key'])) {
+                    $settings[(string)$row['key']] = (string)($row['value'] ?? '');
+                }
+            }
+        } catch (\Throwable $e) {
+            error_log('AdminController::system settings - ' . $e->getMessage());
+        }
+
+        $bannerFormats = [];
+        try {
+            $bannerFormats = $db->query('SELECT * FROM banner_formats ORDER BY sort_order ASC, id ASC')->fetchAll();
+        } catch (\Throwable $e) {
+            error_log('AdminController::system banner_formats - ' . $e->getMessage());
+        }
+
         View::render('admin/system', [
             'title'  => 'System Overview',
             'active' => 'system',
+            'settings' => $settings,
+            'bannerFormats' => $bannerFormats,
+            'turnstileSiteKey' => (string)($_ENV['TURNSTILE_SITE_KEY'] ?? ''),
+            'turnstileSecretKey' => (string)($_ENV['TURNSTILE_SECRET_KEY'] ?? ''),
+            'csrf_token' => Auth::csrfToken(),
         ], 'admin');
+    }
+
+    public function saveSettings(): void
+    {
+        AdminAuth::require();
+        Auth::csrfVerify($_POST['csrf_token'] ?? '');
+
+        $db = Database::getInstance();
+        $allowed = [
+            'site_name', 'site_url', 'site_email', 'support_email',
+            'ga_enabled', 'ga_id',
+            'smtp_enabled', 'smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass',
+            'smtp_from_email', 'smtp_from_name', 'smtp_encryption',
+            'double_optin', 'maintenance_mode', 'maintenance_notice', 'newsletter_enabled',
+        ];
+        $checkboxes = ['ga_enabled', 'smtp_enabled', 'double_optin', 'maintenance_mode', 'newsletter_enabled'];
+
+        $stmt = $db->prepare('INSERT INTO site_settings (`key`, `value`) VALUES (?,?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)');
+        foreach ($allowed as $key) {
+            $value = $_POST[$key] ?? '';
+            if (in_array($key, $checkboxes, true)) {
+                $value = isset($_POST[$key]) ? '1' : '0';
+            }
+            if ($key === 'smtp_port') {
+                $value = (string)max(1, (int)$value);
+            }
+            if ($key === 'smtp_encryption' && !in_array((string)$value, ['tls', 'ssl', 'none'], true)) {
+                $value = 'tls';
+            }
+
+            $stmt->execute([$key, (string)$value]);
+        }
+
+        $tab = (string)($_POST['redirect_tab'] ?? 'site');
+        if (!in_array($tab, ['site', 'mail', 'maintenance'], true)) {
+            $tab = 'site';
+        }
+        header('Location: /admin/system?tab=' . urlencode($tab) . '&saved=1');
+        exit;
+    }
+
+    public function createBannerFormat(): void
+    {
+        AdminAuth::require();
+        Auth::csrfVerify($_POST['csrf_token'] ?? '');
+
+        $name = trim((string)($_POST['name'] ?? ''));
+        $width = max(1, (int)($_POST['width'] ?? 0));
+        $height = max(1, (int)($_POST['height'] ?? 0));
+        $sortOrder = (int)($_POST['sort_order'] ?? 0);
+        $isActive = isset($_POST['is_active']) ? 1 : 0;
+
+        if ($name !== '') {
+            $sizeKey = $width . 'x' . $height;
+            Database::getInstance()->prepare('INSERT IGNORE INTO banner_formats (name, width, height, size_key, is_active, sort_order) VALUES (?,?,?,?,?,?)')
+                ->execute([$name, $width, $height, $sizeKey, $isActive, $sortOrder]);
+        }
+
+        header('Location: /admin/system?tab=formats&saved=1');
+        exit;
+    }
+
+    public function updateBannerFormat(): void
+    {
+        AdminAuth::require();
+        Auth::csrfVerify($_POST['csrf_token'] ?? '');
+
+        $id = (int)($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            header('Location: /admin/system?tab=formats&error=1');
+            exit;
+        }
+
+        $name = trim((string)($_POST['name'] ?? ''));
+        $width = max(1, (int)($_POST['width'] ?? 0));
+        $height = max(1, (int)($_POST['height'] ?? 0));
+        $sortOrder = (int)($_POST['sort_order'] ?? 0);
+        $isActive = isset($_POST['is_active']) ? 1 : 0;
+        $sizeKey = $width . 'x' . $height;
+
+        if ($name === '') {
+            header('Location: /admin/system?tab=formats&error=1');
+            exit;
+        }
+
+        Database::getInstance()->prepare('UPDATE banner_formats SET name = ?, width = ?, height = ?, size_key = ?, is_active = ?, sort_order = ? WHERE id = ?')
+            ->execute([$name, $width, $height, $sizeKey, $isActive, $sortOrder, $id]);
+
+        header('Location: /admin/system?tab=formats&saved=1');
+        exit;
+    }
+
+    public function deleteBannerFormat(): void
+    {
+        AdminAuth::require();
+        Auth::csrfVerify($_POST['csrf_token'] ?? '');
+
+        $id = (int)($_POST['id'] ?? 0);
+        if ($id > 0) {
+            Database::getInstance()->prepare('DELETE FROM banner_formats WHERE id = ?')->execute([$id]);
+        }
+
+        header('Location: /admin/system?tab=formats&saved=1');
+        exit;
+    }
+
+    public function sendSystemTestMail(): void
+    {
+        AdminAuth::require();
+        Auth::csrfVerify($_POST['csrf_token'] ?? '');
+
+        $db = Database::getInstance();
+        $settingsRows = [];
+        try {
+            $settingsRows = $db->query('SELECT `key`, `value` FROM site_settings')->fetchAll();
+        } catch (\Throwable $e) {
+            error_log('AdminController::sendSystemTestMail settings - ' . $e->getMessage());
+        }
+
+        $settings = [];
+        foreach ($settingsRows as $row) {
+            $settings[(string)$row['key']] = (string)($row['value'] ?? '');
+        }
+
+        $to = trim((string)($_POST['test_email'] ?? ''));
+        if ($to === '') {
+            $to = (string)($settings['support_email'] ?? $settings['site_email'] ?? '');
+        }
+
+        if ($to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
+            header('Location: /admin/system?tab=mail&mail_test=invalid');
+            exit;
+        }
+
+        $subject = 'Aidzap SMTP test';
+        $body = '<p>This is a test email from Aidzap system settings.</p><p>Sent at: ' . date('Y-m-d H:i:s') . '</p>';
+        $ok = MailService::send($to, $subject, $body);
+
+        header('Location: /admin/system?tab=mail&mail_test=' . ($ok ? 'ok' : 'fail'));
+        exit;
     }
 
     public function clearCache(): void
