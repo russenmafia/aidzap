@@ -665,51 +665,36 @@ class AdminController
         ")->fetchAll();
 
         // Publisher payouts by campaign pricing model (via unit→impression linkage)
+        // Publisher Share = Revenue * avg_revenue_share
         $pubByModel = [];
         try {
             $rows = $db->query("
-                SELECT c.pricing_model,
-                       COALESCE(SUM(e.amount), 0) AS total_payout
-                FROM earnings e
-                JOIN ad_units au ON au.id = e.unit_id
-                JOIN impressions i ON i.unit_id = e.unit_id
-                    AND i.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-                    AND i.is_fraud = 0
+                SELECT c.pricing_model, AVG(au.revenue_share) AS avg_share
+                FROM impressions i
                 JOIN campaigns c ON c.id = i.campaign_id
-                WHERE e.date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                JOIN ad_units au ON au.id = i.unit_id
+                WHERE i.is_fraud = 0
+                  AND i.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
                 GROUP BY c.pricing_model
             ")->fetchAll();
             foreach ($rows as $r) {
-                $pubByModel[$r['pricing_model']] = (float)$r['total_payout'];
+                $pubByModel[$r["pricing_model"]] = (float)$r["avg_share"] / 100;
             }
         } catch (\Throwable $e) {}
-
         $refByModel = [];
         try {
-            $rows = $db->query("
-                SELECT c.pricing_model,
-                       COALESCE(SUM(re.commission), 0) AS total_commission
-                FROM referral_earnings re
-                JOIN impressions i ON i.unit_id = re.from_user_id
-                    AND i.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-                    AND i.is_fraud = 0
-                JOIN campaigns c ON c.id = i.campaign_id
-                WHERE re.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-                GROUP BY c.pricing_model
-            ")->fetchAll();
-            foreach ($rows as $r) {
-                $refByModel[$r['pricing_model']] = (float)$r['total_commission'];
-            }
-        } catch (\Throwable $e) {}
-
-        // Merge payout data into perImpression rows
+            $total_ref = (float)$db->query("SELECT COALESCE(SUM(commission),0) FROM referral_earnings WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)")->fetchColumn();
+            $total_rev = (float)$db->query("SELECT COALESCE(SUM(cost),0) FROM impressions WHERE is_fraud=0 AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)")->fetchColumn();
+            $refRatioGlobal = $total_rev > 0 ? $total_ref / $total_rev : 0.0;
+        } catch (\Throwable $e) { $refRatioGlobal = 0.0; }
         foreach ($perImpression as &$row) {
-            $model = $row['pricing_model'];
-            $row['total_publisher_payout'] = $pubByModel[$model] ?? 0.0;
-            $row['total_ref_payout']       = $refByModel[$model] ?? 0.0;
+            $model = $row["pricing_model"];
+            $rev = (float)$row["total_revenue"];
+            $shareRatio = $pubByModel[$model] ?? 0.8;
+            $row["total_publisher_payout"] = round($rev * $shareRatio, 8);
+            $row["total_ref_payout"] = round($rev * $refRatioGlobal, 8);
         }
         unset($row);
-
         // ── Revenue Share Verteilung ──────────────────────────────────────
         $revenueShare = [];
         try {
