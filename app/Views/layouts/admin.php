@@ -36,6 +36,9 @@ $active = $active ?? '';
       </a>
 
       <div class="sb-section"><?= __('admin.review') ?></div>
+      <a href="/admin/review/campaigns" class="sb-item <?= $active === 'review_campaigns' ? 'active' : '' ?>">
+        <span class="sb-icon">&#128196;</span> Campaigns
+      </a>
       <a href="/admin/review/units" class="sb-item <?= $active === 'review' && str_contains($_SERVER['REQUEST_URI'],'units') ? 'active' : '' ?>">
         <span class="sb-icon">&#9635;</span> <?= __('admin.ad_units') ?>
         <?php

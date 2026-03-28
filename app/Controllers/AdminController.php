@@ -761,4 +761,41 @@ class AdminController
             'recentTransactions' => $recentTransactions,
         ], 'admin');
     }
+    public function reviewCampaigns(): void
+    {
+        AdminAuth::require();
+        $db = Database::getInstance();
+        $campaigns = $db->query("
+            SELECT c.*, u.username,
+                   COUNT(b.id) AS banner_count
+            FROM campaigns c
+            JOIN users u ON u.id = c.user_id
+            LEFT JOIN ad_banners b ON b.campaign_id = c.id
+            WHERE c.status = 'pending_review'
+            GROUP BY c.id
+            ORDER BY c.created_at ASC
+        ")->fetchAll();
+        View::render('admin/review-campaigns', [
+            'title'     => 'Campaign Review',
+            'active'    => 'review_campaigns',
+            'campaigns' => $campaigns,
+            'csrf_token'=> Auth::csrfToken(),
+        ], 'admin');
+    }
+
+    public function reviewCampaignAction(): void
+    {
+        AdminAuth::require();
+        Auth::csrfVerify($_POST['csrf_token'] ?? '');
+        $id     = (int)($_POST['campaign_id'] ?? 0);
+        $action = $_POST['action'] ?? '';
+        if (!$id || !in_array($action, ['approve','reject'], true)) {
+            header('Location: /admin/review/campaigns'); exit;
+        }
+        $db = Database::getInstance();
+        $status = $action === 'approve' ? 'active' : 'rejected';
+        $db->prepare('UPDATE campaigns SET status = ? WHERE id = ?')->execute([$status, $id]);
+        header('Location: /admin/review/campaigns?done=1'); exit;
+    }
+
 }

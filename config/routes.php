@@ -48,6 +48,8 @@ $router->get('/admin/users',                  [\Controllers\AdminController::cla
 $router->post('/admin/users/action',          [\Controllers\AdminController::class, 'userAction']);
 $router->get('/admin/review/units',           [\Controllers\AdminController::class, 'reviewUnits']);
 $router->post('/admin/review/units/action',   [\Controllers\AdminController::class, 'reviewUnitAction']);
+$router->get('/admin/review/campaigns',        [\Controllers\AdminController::class, 'reviewCampaigns']);
+$router->post('/admin/review/campaigns/action', [\Controllers\AdminController::class, 'reviewCampaignAction']);
 $router->get('/admin/review/banners',         [\Controllers\AdminController::class, 'reviewBanners']);
 $router->post('/admin/review/banners/action', [\Controllers\AdminController::class, 'reviewBannerAction']);
 $router->get('/admin/fraud',                  [\Controllers\AdminController::class, 'fraud']);

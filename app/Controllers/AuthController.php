@@ -182,13 +182,13 @@ class AuthController
         if (empty($token)) return false;
         $secret = $_ENV['TURNSTILE_SECRET_KEY'] ?? '';
         if (empty($secret)) return true;
-        $response = @file_get_contents('https://challenges.cloudflare.com/turnstile/v0/siteverify', false,
-            stream_context_create(['http' => [
-                'method'  => 'POST',
-                'header'  => 'Content-Type: application/x-www-form-urlencoded',
-                'content' => http_build_query(['secret' => $secret, 'response' => $token]),
-            ]])
-        );
+        $ch = curl_init('https://challenges.cloudflare.com/turnstile/v0/siteverify');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query(['secret' => $secret, 'response' => $token]));
+        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+        $response = curl_exec($ch);
+        curl_close($ch);
         if (!$response) return false;
         $data = json_decode($response, true);
         return $data['success'] ?? false;
