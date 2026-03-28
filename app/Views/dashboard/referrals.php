@@ -1,152 +1,159 @@
 <?php $active = 'referrals'; ?>
-
 <div class="page-header">
-  <h1 class="page-title">Referrals</h1>
+  <h1 class="page-title">🔗 <?= __('referral.page_title') ?></h1>
 </div>
 
-<!-- Stats -->
-<div class="metrics" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px">
-  <div class="metric">
-    <div class="metric-label">Total referrals</div>
-    <div class="metric-val"><?= (int)$stats['counts']['total'] ?></div>
-    <div class="metric-sub">all levels</div>
-  </div>
-  <div class="metric">
-    <div class="metric-label">Direct (L1)</div>
-    <div class="metric-val"><?= (int)$stats['counts']['level1'] ?></div>
-    <div class="metric-sub"><?= number_format((float)$settings['level1_pct'], 1) ?>% commission</div>
-  </div>
-  <div class="metric">
-    <div class="metric-label">Total earned</div>
-    <div class="metric-val green"><?= number_format((float)$stats['earnings']['total'], 8) ?></div>
-    <div class="metric-sub">BTC commissions</div>
-  </div>
-  <div class="metric">
-    <div class="metric-label">From earnings</div>
-    <div class="metric-val"><?= number_format((float)$stats['earnings']['from_earnings'], 8) ?></div>
-    <div class="metric-sub">publisher referrals</div>
-  </div>
-</div>
-
-<!-- Ref Link -->
+<!-- Section 1: Your Referral Link -->
 <div class="unit-card" style="margin-bottom:20px">
-  <div class="unit-header"><div class="dt-name">Your Referral Link</div></div>
+  <div class="unit-header">
+    <div class="dt-name"><?= __('referral.your_link') ?></div>
+  </div>
   <div style="padding:20px">
-    <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px">
-      <div class="embed-box" style="flex:1;font-size:13px;color:#fff"><?= htmlspecialchars($refUrl) ?></div>
-      <button class="copy-btn" onclick="navigator.clipboard.writeText('<?= htmlspecialchars($refUrl) ?>').then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',2000)})">Copy</button>
+    <div style="display:flex;gap:12px;margin-bottom:12px">
+      <input type="text" id="ref-link-input" readonly value="<?= htmlspecialchars($refLink) ?>"
+             style="flex:1;background:#080c10;border:0.5px solid rgba(255,255,255,0.1);border-radius:8px;padding:12px 16px;color:#3ecf8e;font-family:'DM Mono',monospace;font-size:13px">
+      <button onclick="copyRefLink()" 
+              style="background:#3ecf8e;color:#000;border:none;padding:12px 20px;border-radius:8px;font-weight:600;cursor:pointer;white-space:nowrap">
+        📋 <?= __('referral.copy') ?>
+      </button>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <div style="font-size:12px;color:rgba(255,255,255,0.3)">Commission structure:</div>
-      <span class="badge badge-green">L1: <?= htmlspecialchars($settings['level1_pct']) ?>%</span>
-      <span class="badge badge-gray">L2: <?= htmlspecialchars($settings['level2_pct']) ?>%</span>
-      <span class="badge badge-gray">L3: <?= htmlspecialchars($settings['level3_pct']) ?>%</span>
+    <div style="font-size:12px;color:rgba(255,255,255,0.3)">
+      <?= __('referral.link_hint', ['count' => $stats['counts']['total'] ?? 0]) ?>
     </div>
   </div>
 </div>
 
-<!-- Social Share -->
+<!-- Section 2: Banner Embed Codes -->
 <div class="unit-card" style="margin-bottom:20px">
-  <div class="unit-header"><div class="dt-name">Share on Social Media</div></div>
+  <div class="unit-header">
+    <div class="dt-name">🖼️ <?= __('referral.banner_codes') ?></div>
+  </div>
   <div style="padding:20px">
-
-    <!-- Language Tabs -->
-    <div class="cron-tab-group" style="margin-bottom:16px">
-      <button class="cron-tab active" onclick="setLang('en',this)">English</button>
-      <button class="cron-tab" onclick="setLang('de',this)">Deutsch</button>
-    </div>
-
-    <!-- Message Box -->
-    <textarea id="share-text" rows="5"
-              style="width:100%;background:#080c10;border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:12px;font-family:'DM Mono',monospace;font-size:12px;color:#fff;line-height:1.7;resize:vertical"
-    ><?= htmlspecialchars($shareTexts['en']) ?></textarea>
-
-    <!-- Share Buttons -->
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
-
-      <button class="share-btn share-facebook" onclick="shareOn('facebook')">
-        <span class="share-icon">f</span> Facebook
-      </button>
-      <button class="share-btn share-twitter" onclick="shareOn('twitter')">
-        <span class="share-icon">𝕏</span> Twitter/X
-      </button>
-      <button class="share-btn share-telegram" onclick="shareOn('telegram')">
-        <span class="share-icon">✈</span> Telegram
-      </button>
-      <button class="share-btn share-whatsapp" onclick="shareOn('whatsapp')">
-        <span class="share-icon">●</span> WhatsApp
-      </button>
-      <button class="share-btn share-reddit" onclick="shareOn('reddit')">
-        <span class="share-icon">●</span> Reddit
-      </button>
-      <button class="share-btn share-linkedin" onclick="shareOn('linkedin')">
-        <span class="share-icon">in</span> LinkedIn
-      </button>
-
-      <button class="copy-btn" style="margin-left:auto" onclick="copyShareText()">Copy text</button>
-    </div>
-
-    <p style="font-size:11px;color:rgba(255,255,255,0.2);margin-top:12px">
-      You can edit the text above before sharing. Your referral link is automatically included.
+    <p style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:16px">
+      <?= __('referral.banner_hint') ?>
     </p>
-  </div>
-</div>
-
-<!-- Referral List -->
-<div class="unit-card">
-  <div class="unit-header"><div class="dt-name">Your Referrals</div></div>
-  <?php if (empty($stats['referrals'])): ?>
-  <div style="padding:20px"><p style="font-size:13px;color:rgba(255,255,255,0.3)">No referrals yet. Share your link to start earning commissions.</p></div>
-  <?php else: ?>
-  <div class="data-table" style="border:none;border-radius:0">
-    <div class="dt-header" style="grid-template-columns:1fr 60px 120px">
-      <div>User</div><div>Level</div><div>Joined</div>
-    </div>
-    <?php foreach ($stats['referrals'] as $r): ?>
-    <div class="dt-row" style="grid-template-columns:1fr 60px 120px">
-      <div class="dt-name"><?= htmlspecialchars($r['username']) ?></div>
-      <div><span class="badge badge-gray">L<?= (int)$r['level'] ?></span></div>
-      <div class="dt-muted" style="font-size:11px"><?= date('d.m.Y', strtotime($r['user_joined'])) ?></div>
+    <?php foreach (['468x60','300x250','728x90','160x600'] as $size): 
+      [$w,$h] = explode('x', $size);
+      $embedCode = '<iframe src="https://aidzap.com/ad/ref/' . htmlspecialchars($refCode) . '/' . $size . '" width="' . $w . '" height="' . $h . '" scrolling="no" frameborder="0" style="border:none"></iframe>';
+    ?>
+    <div style="margin-bottom:16px">
+      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px"><?= $size ?></div>
+      <div style="display:flex;gap:8px">
+        <code style="flex:1;background:#080c10;border:0.5px solid rgba(255,255,255,0.08);border-radius:6px;padding:8px 12px;font-size:11px;color:rgba(255,255,255,0.6);font-family:'DM Mono',monospace;word-break:break-all;overflow:auto;max-height:50px">
+          <?= htmlspecialchars($embedCode) ?>
+        </code>
+        <button onclick="copyCode(this, '<?= htmlspecialchars(addslashes($embedCode)) ?>')"
+                style="background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.1);color:#fff;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:12px;white-space:nowrap">
+          <?= __('referral.copy') ?>
+        </button>
+      </div>
     </div>
     <?php endforeach; ?>
   </div>
-  <?php endif; ?>
+</div>
+
+<!-- Section 3: Social Share Buttons -->
+<div class="unit-card" style="margin-bottom:20px">
+  <div class="unit-header">
+    <div class="dt-name">📢 Share on Social Networks</div>
+  </div>
+  <div style="padding:20px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <?php
+        $shareUrl = urlencode($refLink);
+        $shareText = urlencode(__('referral.share_text'));
+        $networks = [
+            ['Facebook',  'https://www.facebook.com/sharer/sharer.php?u=' . $shareUrl, '#1877F2'],
+            ['X/Twitter', 'https://twitter.com/intent/tweet?url=' . $shareUrl . '&text=' . $shareText, '#000'],
+            ['WhatsApp',  'https://wa.me/?text=' . $shareText . '%20' . $shareUrl, '#25D366'],
+            ['Telegram',  'https://t.me/share/url?url=' . $shareUrl . '&text=' . $shareText, '#229ED9'],
+            ['Reddit',    'https://reddit.com/submit?url=' . $shareUrl . '&title=' . $shareText, '#FF4500'],
+            ['LinkedIn',  'https://www.linkedin.com/sharing/share-offsite/?url=' . $shareUrl, '#0A66C2'],
+            ['Pinterest', 'https://pinterest.com/pin/create/button/?url=' . $shareUrl . '&description=' . $shareText, '#E60023'],
+            ['Email',     'mailto:?subject=' . urlencode(__('referral.email_subject')) . '&body=' . $shareText . '%20' . $shareUrl, '#555'],
+        ];
+        foreach ($networks as [$name, $url, $color]): ?>
+      <a href="<?= $url ?>" target="_blank" rel="noopener noreferrer"
+         style="background:<?= $color ?>;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500;white-space:nowrap;display:inline-block">
+        <?= htmlspecialchars($name) ?>
+      </a>
+      <?php endforeach; ?>
+    </div>
+  </div>
+</div>
+
+<!-- Section 4: Ready-made Post Texts -->
+<?php if (!empty($socialMessages)): ?>
+<div class="unit-card" style="margin-bottom:20px">
+  <div class="unit-header">
+    <div class="dt-name">📝 <?= __('referral.post_texts') ?></div>
+  </div>
+  <div style="padding:20px">
+    <?php foreach ($socialMessages as $msg): ?>
+    <div style="background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);border-radius:12px;padding:20px;margin-bottom:12px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px"><?= htmlspecialchars($msg['title']) ?></div>
+      <textarea readonly rows="3" style="width:100%;background:#080c10;border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 14px;color:rgba(255,255,255,0.7);font-size:13px;resize:none;font-family:'DM Mono',monospace">
+<?= htmlspecialchars($msg['text']) ?></textarea>
+      <div style="display:flex;gap:10px;margin-top:10px">
+        <button onclick="copyCode(this, '<?= htmlspecialchars(addslashes($msg['text'])) ?>')"
+                style="background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.1);color:#fff;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:12px;white-space:nowrap">
+          📋 <?= __('referral.copy') ?>
+        </button>
+        <a href="https://www.facebook.com/sharer/sharer.php?quote=<?= urlencode($msg['text']) ?>&u=<?= $shareUrl ?>"
+           target="_blank" rel="noopener noreferrer"
+           style="background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.1);color:#fff;padding:8px 14px;border-radius:6px;text-decoration:none;font-size:12px;white-space:nowrap;display:inline-block">
+          📘 <?= __('referral.share_fb') ?>
+        </a>
+      </div>
+    </div>
+    <?php endforeach; ?>
+  </div>
+</div>
+<?php endif; ?>
+
+<!-- Section 5: Statistics -->
+<div class="admin-section">
+  <div class="section-bar"><h2 class="section-title">📊 <?= __('referral.stats_title') ?></h2></div>
+  <div class="admin-metrics">
+    <div class="metric">
+      <div class="metric-label"><?= __('referral.level1') ?></div>
+      <div class="metric-val"><?= number_format((int)($stats['counts']['level1'] ?? 0)) ?></div>
+      <div class="metric-sub">direct referrals</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label"><?= __('referral.level2') ?></div>
+      <div class="metric-val"><?= number_format((int)($stats['counts']['level2'] ?? 0)) ?></div>
+      <div class="metric-sub">second level</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label"><?= __('referral.level3') ?></div>
+      <div class="metric-val"><?= number_format((int)($stats['counts']['level3'] ?? 0)) ?></div>
+      <div class="metric-sub">third level</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label green"><?= __('referral.total_earned') ?></div>
+      <div class="metric-val green"><?= number_format((float)($stats['earnings']['total'] ?? 0), 8) ?></div>
+      <div class="metric-sub">BTC total</div>
+    </div>
+  </div>
 </div>
 
 <script>
-const shareTexts = <?= json_encode($shareTexts) ?>;
-const refUrl     = '<?= htmlspecialchars($refUrl) ?>';
-
-function setLang(lang, btn) {
-  document.querySelectorAll('.cron-tab').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('share-text').value = shareTexts[lang] || shareTexts['en'];
+function copyRefLink() {
+    const input = document.getElementById('ref-link-input');
+    navigator.clipboard.writeText(input.value).then(() => {
+        const msg = document.createElement('div');
+        msg.textContent = '✓ <?= __('referral.copied') ?>';
+        msg.style.cssText = 'position:fixed;top:20px;right:20px;background:#3ecf8e;color:#000;padding:12px 16px;border-radius:6px;z-index:9999;font-weight:600';
+        document.body.appendChild(msg);
+        setTimeout(() => msg.remove(), 2000);
+    });
 }
-
-function getShareText() {
-  return document.getElementById('share-text').value;
-}
-
-function copyShareText() {
-  navigator.clipboard.writeText(getShareText()).then(() => {
-    const btn = event.target;
-    btn.textContent = 'Copied!';
-    setTimeout(() => btn.textContent = 'Copy text', 2000);
-  });
-}
-
-const shareUrls = {
-  facebook: text => `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(refUrl)}&quote=${encodeURIComponent(text)}`,
-  twitter:  text => `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`,
-  telegram: text => `https://t.me/share/url?url=${encodeURIComponent(refUrl)}&text=${encodeURIComponent(text)}`,
-  whatsapp: text => `https://wa.me/?text=${encodeURIComponent(text)}`,
-  reddit:   text => `https://www.reddit.com/submit?url=${encodeURIComponent(refUrl)}&title=${encodeURIComponent(text.split('\n')[0])}`,
-  linkedin: text => `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(refUrl)}`,
-};
-
-function shareOn(platform) {
-  const text = getShareText();
-  const url  = shareUrls[platform](text);
-  window.open(url, '_blank', 'width=600,height=500,noopener');
+function copyCode(btn, text) {
+    navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = '✓ <?= __('referral.copied') ?>';
+        setTimeout(() => btn.textContent = orig, 2000);
+    });
 }
 </script>

@@ -133,6 +133,7 @@ $router->get('/advertiser/banners',  [\Controllers\BannersOverviewController::cl
 $router->get('/publisher/withdraw',  [\Controllers\WithdrawController::class, 'index']);
 
 // Referrals
+$router->get('/dashboard/referrals', [\Controllers\ReferralController::class, 'dashboard']);
 $router->get('/referrals',           [\Controllers\ReferralController::class, 'index']);
 $router->get('/r/:code',             [\Controllers\ReferralController::class, 'redirect']);
 $router->get('/admin/referrals',     [\Controllers\AdminReferralController::class, 'index']);

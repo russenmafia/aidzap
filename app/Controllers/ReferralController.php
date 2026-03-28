@@ -49,4 +49,34 @@ class ReferralController
             'de' => "🔒 Crypto-Werbung ohne KYC und ohne Tracking!\n\nVerdiene BTC mit Werbeflächen oder schalte Krypto-Ads. Kostenlos starten:\n{$refUrl}\n\n#krypto #bitcoin #werbung #datenschutz",
         ];
     }
+
+    // ── Referral Dashboard ────────────────────────────────────────────────────
+    public function dashboard(): void
+    {
+        Auth::require();
+        $userId = Auth::id();
+        $service = new ReferralService();
+        $refCode = $service->getRefCode($userId);
+        $refLink = 'https://' . ($_SERVER['HTTP_HOST'] ?? 'aidzap.com') . '/r/' . $refCode;
+        $stats   = $service->getStats($userId);
+
+        $db = Database::getInstance();
+        $settings = $db->query('SELECT social_messages FROM referral_settings WHERE id = 1 LIMIT 1')->fetch();
+        $socialMessages = json_decode($settings['social_messages'] ?? '[]', true) ?: [];
+
+        foreach ($socialMessages as &$msg) {
+            $msg['text'] = str_replace('{ref_link}', $refLink, $msg['text']);
+        }
+        unset($msg);
+
+        View::render('dashboard/referrals', [
+            'title'          => __('referral.page_title'),
+            'active'         => 'referrals',
+            'refCode'        => $refCode,
+            'refLink'        => $refLink,
+            'stats'          => $stats,
+            'socialMessages' => $socialMessages,
+            'csrf_token'     => \Core\Auth::csrfToken(),
+        ], 'dashboard');
+    }
 }

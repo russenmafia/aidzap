@@ -23,6 +23,15 @@ class AdminReferralController
         AdminAuth::require();
         $db = Database::getInstance();
 
+        // Validate JSON if social_messages provided
+        $socialMessages = $_POST['social_messages'] ?? '[]';
+        if (!empty($socialMessages)) {
+            json_decode($socialMessages);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $socialMessages = '[]';
+            }
+        }
+
         $db->prepare('
             UPDATE referral_settings SET
                 is_active        = ?,
@@ -35,7 +44,8 @@ class AdminReferralController
                 signup_bonus_active = ?,
                 signup_bonus_amount = ?,
                 on_earnings = ?,
-                on_spend = ?
+                on_spend = ?,
+                social_messages  = ?
             WHERE id = 1
         ')->execute([
             isset($_POST['enabled'])          ? 1 : 0,
@@ -49,6 +59,7 @@ class AdminReferralController
             max(0, (float)($_POST['signup_bonus'] ?? 0)),
             isset($_POST['on_earnings']) ? 1 : 0,
             isset($_POST['on_spend']) ? 1 : 0,
+            $socialMessages,
         ]);
 
         header('Location: /admin/referrals?saved=1'); exit;

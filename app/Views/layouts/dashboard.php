@@ -44,6 +44,9 @@ $user = $user ?? ['username' => '', 'role' => 'both'];
       <a href="/publisher/withdraw" class="sb-item <?= $active === 'withdraw' ? 'active' : '' ?>">
         <span class="sb-icon">&#8593;</span> Withdraw
       </a>
+      <a href="/dashboard/referrals" class="sb-item <?= $active === 'referrals' ? 'active' : '' ?>">
+        <span class="sb-icon">🔗</span> <?= __('nav.referrals') ?? 'Referrals' ?>
+      </a>
       <?php endif; ?>
 
       <?php if (in_array($user['role'], ['advertiser','both','admin'])): ?>
