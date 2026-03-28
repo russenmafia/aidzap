@@ -54,27 +54,48 @@ class ReferralController
     public function dashboard(): void
     {
         Auth::require();
-        $userId = Auth::id();
-        $service = new ReferralService();
-        $refCode = $service->getRefCode($userId);
+        $userId = (int)Auth::id();
+
+        try {
+            $service = new ReferralService();
+            $refCode = $service->getRefCode($userId);
+        } catch (\Exception $e) {
+            error_log("ReferralController::dashboard getRefCode - " . $e->getMessage());
+            $refCode = strtoupper(substr(md5((string)$userId), 0, 8));
+        }
+
         $refLink = 'https://' . ($_SERVER['HTTP_HOST'] ?? 'aidzap.com') . '/r/' . $refCode;
-        $stats   = $service->getStats($userId);
+
+        try {
+            $service = $service ?? new ReferralService();
+            $stats   = $service->getStats($userId);
+        } catch (\Exception $e) {
+            error_log("ReferralController::dashboard getStats - " . $e->getMessage());
+            $stats = [
+                'counts'   => ['total' => 0, 'level1' => 0, 'level2' => 0, 'level3' => 0],
+                'earnings' => ['total' => 0, 'from_earnings' => 0, 'from_spend' => 0, 'from_signup' => 0],
+                'referrals'=> [],
+            ];
+        }
 
         $socialMessages = [];
         try {
-            $db = Database::getInstance();
+            $db   = Database::getInstance();
             $stmt = $db->prepare('SELECT social_messages FROM referral_settings WHERE id = 1 LIMIT 1');
             $stmt->execute();
-            $result = $stmt->fetch(\PDO::FETCH_ASSOC);
-            $socialMessages = json_decode($result['social_messages'] ?? '[]', true) ?: [];
-
-            foreach ($socialMessages as &$msg) {
-                $msg['text'] = str_replace('{ref_link}', $refLink, $msg['text']);
+            $row  = $stmt->fetch(\PDO::FETCH_ASSOC);
+            if ($row && !empty($row['social_messages'])) {
+                $decoded = json_decode($row['social_messages'], true);
+                if (is_array($decoded)) {
+                    $socialMessages = $decoded;
+                    foreach ($socialMessages as &$msg) {
+                        $msg['text'] = str_replace('{ref_link}', $refLink, $msg['text'] ?? '');
+                    }
+                    unset($msg);
+                }
             }
-            unset($msg);
         } catch (\Exception $e) {
-            // Tabelle existiert noch nicht - no social messages yet
-            error_log("ReferralController::dashboard - referral_settings: " . $e->getMessage());
+            error_log("ReferralController::dashboard social_messages - " . $e->getMessage());
         }
 
         View::render('dashboard/referrals', [
@@ -84,7 +105,6 @@ class ReferralController
             'refLink'        => $refLink,
             'stats'          => $stats,
             'socialMessages' => $socialMessages,
-            'csrf_token'     => \Core\Auth::csrfToken(),
         ], 'dashboard');
     }
 }

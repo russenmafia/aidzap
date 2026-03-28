@@ -42,6 +42,10 @@ session_start([
 
 \Core\Lang::init();
 
+// Run pending database migrations
+require_once APP_PATH . '/Core/Migration.php';
+\Core\Migration::init();
+
 require_once APP_PATH . '/Core/Router.php';
 $router = new Core\Router();
 require_once CONFIG_PATH . '/routes.php';

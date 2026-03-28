@@ -9,6 +9,7 @@ return [
     'nav.register'                => 'Loslegen',
     'nav.logout'                  => 'Abmelden',
     'nav.dashboard'               => 'Dashboard',
+    'nav.referrals'               => 'Referrals',
 
     // ── Footer ───────────────────────────────────────────────────────────────
     'footer.tagline'              => 'Privacy-first Werbung. Kein KYC. Kein Tracking.',

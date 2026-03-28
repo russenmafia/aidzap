@@ -112,9 +112,11 @@
 <?php endif; ?>
 
 <!-- Section 5: Statistics -->
-<div class="admin-section">
-  <div class="section-bar"><h2 class="section-title">📊 <?= __('referral.stats_title') ?></h2></div>
-  <div class="admin-metrics">
+<div class="unit-card" style="margin-bottom:20px">
+  <div class="unit-header">
+    <div class="dt-name">📊 <?= __('referral.stats_title') ?></div>
+  </div>
+  <div class="metrics" style="grid-template-columns:repeat(4,1fr);padding:20px;gap:16px">
     <div class="metric">
       <div class="metric-label"><?= __('referral.level1') ?></div>
       <div class="metric-val"><?= number_format((int)($stats['counts']['level1'] ?? 0)) ?></div>
@@ -131,8 +133,8 @@
       <div class="metric-sub">third level</div>
     </div>
     <div class="metric">
-      <div class="metric-label green"><?= __('referral.total_earned') ?></div>
-      <div class="metric-val green"><?= number_format((float)($stats['earnings']['total'] ?? 0), 8) ?></div>
+      <div class="metric-label" style="color:#3ecf8e"><?= __('referral.total_earned') ?></div>
+      <div class="metric-val" style="color:#3ecf8e"><?= number_format((float)($stats['earnings']['total'] ?? 0), 8) ?></div>
       <div class="metric-sub">BTC total</div>
     </div>
   </div>

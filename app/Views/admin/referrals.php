@@ -10,12 +10,43 @@
 
 <?php
 $db       = \Core\Database::getInstance();
-$settings = $db->query('SELECT * FROM referral_settings WHERE id = 1 LIMIT 1')->fetch();
+$settings = [];
+$totalReferrals   = 0;
+$totalCommissions = 0.0;
+$totalUsers       = 0;
 
-// Gesamtstatistik
-$totalReferrals   = (int)$db->query('SELECT COUNT(*) FROM referrals')->fetchColumn();
-$totalCommissions = (float)$db->query('SELECT COALESCE(SUM(commission),0) FROM referral_earnings')->fetchColumn();
-$totalUsers       = (int)$db->query('SELECT COUNT(*) FROM users WHERE referred_by IS NOT NULL')->fetchColumn();
+try {
+    $s = $db->query('SELECT * FROM referral_settings WHERE id = 1 LIMIT 1')->fetch();
+    if ($s) $settings = $s;
+} catch (\Exception $e) {
+    error_log('admin/referrals settings: ' . $e->getMessage());
+}
+try {
+    $totalReferrals = (int)$db->query('SELECT COUNT(*) FROM referrals')->fetchColumn();
+} catch (\Exception $e) { /* table may not exist yet */ }
+try {
+    $totalCommissions = (float)$db->query('SELECT COALESCE(SUM(commission),0) FROM referral_earnings')->fetchColumn();
+} catch (\Exception $e) { /* table may not exist yet */ }
+try {
+    $totalUsers = (int)$db->query('SELECT COUNT(*) FROM users WHERE referred_by IS NOT NULL')->fetchColumn();
+} catch (\Exception $e) { /* column may not exist yet */ }
+
+// Provide defaults for all expected settings keys
+$settings = array_merge([
+    'is_active'              => 1,
+    'enabled'                => 1,
+    'level1_pct'             => 5,
+    'level2_pct'             => 3,
+    'level3_pct'             => 1,
+    'on_earnings'            => 1,
+    'on_spend'               => 1,
+    'signup_bonus_active'    => 0,
+    'signup_bonus_amount'    => '0.00000000',
+    'ai_banner_enabled'      => 1,
+    'ai_banner_price'        => '0.00000100',
+    'impression_interval_min'=> 60,
+    'social_messages'        => '[]',
+], $settings);
 ?>
 
 <!-- Stats -->
@@ -164,18 +195,21 @@ $totalUsers       = (int)$db->query('SELECT COUNT(*) FROM users WHERE referred_b
 <div class="admin-section">
   <div class="section-bar" style="padding:16px 20px"><h2 class="section-title">Top Referrers</h2></div>
   <?php
-  $topReferrers = $db->query('
-    SELECT u.username,
-           COUNT(r.id) AS referral_count,
-           COALESCE(SUM(re.commission),0) AS total_commission
-    FROM users u
-    LEFT JOIN referrals r ON r.user_id = u.id
-    LEFT JOIN referral_earnings re ON re.user_id = u.id
-    GROUP BY u.id
-    HAVING referral_count > 0
-    ORDER BY total_commission DESC
-    LIMIT 10
-  ')->fetchAll();
+  $topReferrers = [];
+  try {
+      $topReferrers = $db->query('
+        SELECT u.username,
+               COUNT(r.id) AS referral_count,
+               COALESCE(SUM(re.commission),0) AS total_commission
+        FROM users u
+        LEFT JOIN referrals r ON r.user_id = u.id
+        LEFT JOIN referral_earnings re ON re.user_id = u.id
+        GROUP BY u.id
+        HAVING referral_count > 0
+        ORDER BY total_commission DESC
+        LIMIT 10
+      ')->fetchAll();
+  } catch (\Exception $e) { /* tables may not exist yet */ }
   ?>
   <?php if (empty($topReferrers)): ?>
   <div style="padding:20px"><p style="color:rgba(255,255,255,0.3);font-size:13px">No referrals yet.</p></div>
